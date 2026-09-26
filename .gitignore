@@ -1,0 +1,27 @@
+# Operating system & User home dotfiles
+.*
+!.gitignore
+!.github/
+
+# Root archive files
+/*.tar
+/*.zip
+/*.gz
+/*.tgz
+/*.7z
+
+# AI agent workspaces, test screenshots and benchmarks
+artifacts/
+scratch/
+
+# Godot binaries & generated cache
+godot-bin/
+godot-prototype/.godot/
+
+# Node dependencies & logs
+node_modules/
+*.log
+npm-debug.log*
+
+# Temporary backup files
+*.bak

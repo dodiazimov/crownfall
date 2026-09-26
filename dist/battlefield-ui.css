@@ -1,0 +1,857 @@
+/* Crownfall battlefield: shared faction cues and restrained navy/brass surfaces. */
+body.in-game { --cf-ink:#090f16; --cf-panel:#0d151e; --cf-line:#514b3b; --cf-steel:#2c3942; --cf-text:#e4ded0; --cf-muted:#919da3; }
+#map .castle { --faction:#a79e83; --faction-dark:#22272a; --faction-cloth:#898571; }
+#map .castle[data-owner="blue"] { --faction:#709fbe; --faction-dark:#102b40; --faction-cloth:#346f9b; }
+#map .castle[data-owner="red"] { --faction:#bd7278; --faction-dark:#35191f; --faction-cloth:#993e50; }
+#map .castle[data-owner="green"] { --faction:#83a38a; --faction-dark:#192b24; --faction-cloth:#4c775b; }
+#map .castle[data-owner="purple"] { --faction:#a18ab9; --faction-dark:#251f32; --faction-cloth:#775589; }
+body.in-game #map .castle .ownership-ring { fill:none; stroke:var(--faction); stroke-width:1px; vector-effect:non-scaling-stroke; opacity:.5; }
+body.in-game #map .castle .ownership-aura { display:none !important; }
+body.in-game #map .castle .faction-flag,body.in-game #map .castle .gate-banner { fill:var(--faction-cloth); }
+body.in-game #map .castle .castle-caption .troop-plate { fill:var(--faction-dark); stroke:var(--faction); stroke-width:1.2px; vector-effect:non-scaling-stroke; }
+body.in-game #map .ownership-marker { fill:var(--faction); }
+body.in-game #map .castle-caption .castle-name { fill:#e4dfd1; font-size:16px !important; letter-spacing:0 !important; }
+body.in-game #map .castle-caption .castle-role { fill:#a6b0b2; font-size:11px !important; opacity:1 !important; }
+body.in-game #map .castle-sprite-img { filter:drop-shadow(8px 12px 10px rgba(1, 4, 8, 0.70)) contrast(1.04) brightness(.88) saturate(.92) !important; }
+body.in-game #map .source-halo,body.in-game #map .target-halo { display:block !important; opacity:0; fill:none !important; stroke-width:1.4px !important; vector-effect:non-scaling-stroke; }
+body.in-game #map .castle.source-selected .source-halo { opacity:.90; stroke:#8ec0e4 !important; stroke-dasharray:5 3; }
+body.in-game #map .castle.target-selected .target-halo { opacity:1; stroke:#cb9290 !important; stroke-dasharray:5 3; }
+body.in-game #map .castle.target-selected[data-owner="blue"] .target-halo { stroke:#8ec0e4 !important; }
+body.in-game #map #routePreview { stroke:#82a9c4; stroke-width:1.8px; vector-effect:non-scaling-stroke; opacity:.82; }
+body.in-game #map #dragLine { stroke:#c5a059; stroke-width:2.8px; vector-effect:non-scaling-stroke; opacity:.82; }
+body.in-game #map #connections { display:none; }
+#map .anchor-debug { display:none; }
+#map.show-anchors .anchor-debug { display:block; }
+#map .castle-silhouette-hitbox { cursor:pointer; }
+/* Plates remain attached to their roots; only optional name/role details declutter. */
+body.in-game #map .label-hidden { display:none !important; }
+body.in-game .game-hud { background:#0a1119f7 !important; border-bottom:1px solid var(--cf-line) !important; box-shadow:0 3px 12px #0005 !important; }
+body.in-game .game-hud .hud-pill { background:transparent !important; border:0 !important; border-right:1px solid var(--cf-steel) !important; border-radius:0 !important; box-shadow:none !important; }
+body.in-game .game-hud .hud-pill small { color:var(--cf-muted) !important; letter-spacing:.07em; }
+body.in-game .game-hud .gold-pill strong { color:#c9b17a; }
+body.in-game .game-hud .army-pill strong { color:#8bacbf; }
+body.in-game .game-hud .hud-btn,body.in-game .map-tools button,body.in-game .minimap-toggle-btn { border:1px solid #39434a !important; border-radius:3px !important; color:#c8c8bf !important; background:#101820 !important; box-shadow:none !important; text-shadow:none !important; }
+body.in-game .game-hud .hud-btn .svg-icon { width:18px; height:18px; }
+body.in-game .game-hud .hud-btn:is(:hover,:focus-visible),body.in-game .map-tools button:is(:hover,:focus-visible) { border-color:#9b875d !important; background:#20221e !important; color:#d8c49a !important; }
+body.in-game .game-hud .match-clock { background:none; border:0; padding:0 6px; color:#9da8ad; font:11px 'Outfit',sans-serif; }
+body.in-game .game-hud .match-clock .live-dot { display:none; }
+body.in-game .game-hud .weather-pill { border:0 !important; color:#a9b6be; }
+body.in-game #weatherIcon { font-size:0 !important; filter:grayscale(1); }
+body.in-game #weatherIcon::after { content:'☀︎'; font:22px/1 Georgia,serif; color:#a6b0b5; }
+body.in-game [data-weather="rain"] #weatherIcon::after { content:'☂︎'; }
+body.in-game [data-weather="snow"] #weatherIcon::after { content:'❄︎'; }
+body.in-game [data-weather="fog"] #weatherIcon::after { content:'≋'; }
+body.in-game .game-dock {
+  background: linear-gradient(180deg, #0a1320ee 0%, #050b12fc 100%) !important;
+  border: 1px solid #6d5f43 !important;
+  box-shadow: inset 0 1px 0 rgba(220, 195, 140, 0.22), inset 0 0 0 1px rgba(10, 20, 30, 0.75), 0 8px 30px rgba(0, 0, 0, 0.65) !important;
+  border-radius: 4px !important;
+  color: var(--cf-text);
+  backdrop-filter: none !important;
+  position: fixed !important;
+  z-index: 90 !important;
+}
+body.in-game #gameDock .dock-section {
+  background: rgba(8, 15, 23, 0.72) !important;
+  border: 1px solid #1c2b3a !important;
+  border-radius: 3px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+body.in-game #gameDock .source-chip {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center;
+  min-width: 0;
+}
+body.in-game #gameDock .source-icon {
+  color: #c9b07a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #111a24;
+  border: 1px solid #283747;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+body.in-game #gameDock .source-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+}
+body.in-game #gameDock .source-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+body.in-game #gameDock #activeName {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  color: #eee7d6 !important;
+}
+body.in-game #gameDock #activeStars {
+  color: #d4b872;
+  font-size: 11px;
+}
+body.in-game #gameDock .spec-pill {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: #14222f;
+  color: #9cb4c2;
+  border: 1px solid #283a4c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+body.in-game #gameDock .source-garrison-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+body.in-game #gameDock .source-garrison {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #72a9cf !important;
+}
+body.in-game #gameDock #sourceIncome {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 11px !important;
+  color: #c9af75 !important;
+  font-weight: 600 !important;
+}
+body.in-game #gameDock :is(.pct-btn, .all-btn, .strip-route-btn, .reserve-btn, .cycle-arrow-btn, .castle-manage-icon-btn) {
+  background: linear-gradient(180deg, #15212b 0%, #0d161f 100%) !important;
+  border: 1px solid #2b3b4a !important;
+  border-radius: 2px !important;
+  color: #b0bfc8 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  text-shadow: none !important;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+body.in-game #gameDock :is(.pct-btn, .all-btn, .strip-route-btn, .reserve-btn, .cycle-arrow-btn, .castle-manage-icon-btn):hover {
+  background: linear-gradient(180deg, #1c2b37 0%, #121c26 100%) !important;
+  border-color: #4b667e !important;
+  color: #e4edf2 !important;
+}
+body.in-game #gameDock :is(.pct-btn, .all-btn, .strip-route-btn, .reserve-btn, .cycle-arrow-btn, .castle-manage-icon-btn):focus-visible {
+  outline: 2px solid #b29c71;
+  outline-offset: 1px;
+}
+body.in-game #gameDock .castle-manage-icon-btn {
+  background: linear-gradient(180deg, #24221b 0%, #151410 100%) !important;
+  border: 1px solid #846f47 !important;
+  color: #eeddb2 !important;
+  gap: 5px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(238, 221, 178, 0.12), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+body.in-game #gameDock .castle-manage-icon-btn:hover {
+  border-color: #bca36e !important;
+  background: linear-gradient(180deg, #2f2a1f 0%, #1c1811 100%) !important;
+  color: #fff3d6 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 243, 214, 0.2), 0 0 8px rgba(188, 163, 110, 0.3) !important;
+}
+body.in-game #gameDock .castle-manage-icon-btn .svg-icon {
+  width: 17px;
+  height: 17px;
+  color: #d8c28b;
+}
+body.in-game #gameDock .mgmt-btn-label {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+body.in-game #gameDock .cycle-arrow-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+body.in-game #gameDock .pct-btn {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+}
+body.in-game #gameDock .pct-btn:is(.active, [aria-pressed="true"]) {
+  background: linear-gradient(180deg, #1b5385 0%, #0d3257 100%) !important;
+  border-color: #3fa2ed !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(165, 219, 255, 0.5), 0 0 10px rgba(63, 162, 237, 0.45) !important;
+  font-weight: 700 !important;
+}
+body.in-game #gameDock .all-btn {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+body.in-game #gameDock .all-btn:is(.active, [aria-pressed="true"]) {
+  background: linear-gradient(180deg, #171f28 0%, #0f151c 100%) !important;
+  border: 1px solid #7a663f !important;
+  color: #e5d3a5 !important;
+  box-shadow: inset 0 1px 0 rgba(229, 211, 165, 0.25), 0 0 8px rgba(122, 102, 63, 0.3) !important;
+}
+body.in-game #gameDock .strip-route-btn,
+body.in-game #gameDock .strip-reserve-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+body.in-game #gameDock .strip-route-btn:hover,
+body.in-game #gameDock .strip-reserve-btn:hover {
+  border-color: #796645 !important;
+  color: #e5dac2 !important;
+}
+body.in-game #gameDock #routeLabel {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ded6c5;
+}
+body.in-game #gameDock #routeSpeedText,
+body.in-game #gameDock #reserveStatus {
+  font-size: 9px;
+  color: #8b9ca8;
+}
+body.in-game #gameDock .target-chip {
+  min-width: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.in-game #gameDock #targetHint {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 12px;
+  color: #cfc8b6;
+  letter-spacing: 0.03em;
+}
+body.in-game #gameDock .target-head-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  min-width: 0;
+}
+body.in-game #gameDock .active-cat-pill,
+body.in-game #gameDock .target-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: rgba(8, 16, 24, 0.9) !important;
+  border: 1px solid #4a5e70;
+  color: #d2dee6;
+  line-height: 1.3;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+body.in-game #gameDock .active-buff-line {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600;
+  color: #c4b07e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.in-game #gameDock .target-strategic-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #a6b8c4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.in-game #gameDock .target-yield-pill {
+  color: #ecdcae !important;
+  font-weight: 700;
+}
+body.in-game #gameDock .target-buff-pill {
+  color: #87b0cc !important;
+}
+body.in-game #gameDock .target-scope-pill {
+  color: #9cb0bc !important;
+  font-size: 8.5px !important;
+  text-transform: uppercase;
+  background: rgba(14, 25, 36, 0.7);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+body.in-game #gameDock .sep-dot {
+  color: #4a5c6b;
+}
+body.in-game #gameDock #targetName {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #eee7d6 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+body.in-game #gameDock #targetDefenseText {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #d17571 !important;
+  flex-shrink: 0;
+}
+body.in-game #gameDock .target-chip[data-risk="normal"] #targetDefenseText {
+  color: #9cb3c2 !important;
+}
+body.in-game #gameDock #battleForecast {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 10px !important;
+  color: #b0bcc4 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.in-game #gameDock .target-chip[data-risk="high"] #battleForecast {
+  color: #dc7e7a !important;
+}
+body.in-game #gameDock #dispatchActionBtn {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  border-radius: 2px !important;
+  cursor: pointer;
+}
+body.in-game #gameDock #dispatchActionBtn:not(:disabled) {
+  background: linear-gradient(180deg, #9b7e40 0%, #634f23 100%) !important;
+  border: 1px solid #d8ba6f !important;
+  color: #fff8e7 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 240, 195, 0.45), 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 8px rgba(216, 186, 111, 0.25) !important;
+}
+body.in-game #gameDock #dispatchActionBtn:not(:disabled):hover {
+  background: linear-gradient(180deg, #b0914d 0%, #755f2d 100%) !important;
+  border-color: #f0d58e !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 14px rgba(240, 213, 142, 0.4) !important;
+}
+body.in-game #gameDock #dispatchActionBtn:disabled {
+  background: linear-gradient(180deg, #141c25 0%, #0d131a 100%) !important;
+  border: 1px solid #24303c !important;
+  color: #65747f !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  cursor: default;
+}
+@media (max-width:900px) {
+  body.in-game .game-hud { min-height:52px !important; padding:calc(3px + env(safe-area-inset-top,0px)) max(6px,env(safe-area-inset-right,0px)) 3px max(6px,env(safe-area-inset-left,0px)) !important; gap:4px !important; }
+  body.in-game .hud-brand-btn { display:inline-flex !important; padding:3px !important; width:34px !important; min-width:34px !important; align-items:center; justify-content:center; }
+  body.in-game .hud-left { gap:0 !important; }
+  body.in-game .game-hud .hud-pill { padding:3px 9px !important; min-height:44px !important; }
+  body.in-game .game-hud .hud-pill strong { font:600 19px/1.1 'Outfit',sans-serif; }
+  body.in-game .game-hud .hud-pill small { font-size:8px !important; }
+  body.in-game .hud-right { gap:3px !important; }
+  body.in-game .game-hud .hud-right .match-clock { display:block !important; min-width:32px; padding:0 2px; }
+  body.in-game .game-hud .weather-pill { width:44px; min-width:44px; padding:0 !important; }
+  body.in-game #gameDock { left:max(6px,env(safe-area-inset-left,0px)) !important; right:max(6px,env(safe-area-inset-right,0px)) !important; width:auto !important; bottom:calc(4px + env(safe-area-inset-bottom,0px)) !important; padding:5px 6px !important; gap:4px !important; display:grid !important; grid-template-columns:1fr !important; grid-template-rows:44px 44px 44px !important; }
+  body.in-game #activeBox { grid-row:1 !important; grid-column:1 !important; height:44px !important; min-height:44px !important; padding:0 4px !important; display:flex !important; align-items:center; justify-content:space-between; }
+  body.in-game #activeBox .source-chip { flex:1; min-width:0; }
+  body.in-game #activeBox :is(#nextSourceBtn, #moreCommandsBtn, #allCastlesBtn) { min-width:44px !important; min-height:44px !important; height:44px !important; }
+  body.in-game #tacticalControls { grid-row:2 !important; grid-column:1 !important; height:44px !important; min-height:44px !important; padding:0 !important; display:flex !important; flex-wrap:nowrap !important; gap:3px !important; width:100% !important; align-items:center; }
+  body.in-game #tacticalControls .percent-group { display:flex !important; flex:4 1 auto !important; gap:3px !important; height:44px !important; min-width:0; }
+  body.in-game #tacticalControls .pct-btn { flex:1 1 0 !important; min-width:44px !important; height:44px !important; padding:0 !important; }
+  body.in-game #tacticalControls :is(#routeToggleBtn, #tacticsBtn) { flex:1 1 auto !important; min-width:44px !important; height:44px !important; padding:0 4px !important; justify-content:center; }
+  body.in-game #tacticalControls :is(#routeToggleBtn, #tacticsBtn) :is(.route-text-wrap, .kbd-pill) { display:none !important; }
+  body.in-game #targetBox { grid-row:3 !important; grid-column:1 !important; height:44px !important; min-height:44px !important; max-height:44px !important; padding:0 4px !important; display:flex !important; flex-wrap:nowrap !important; align-items:center !important; gap:6px !important; min-width:0 !important; overflow:hidden !important; }
+  body.in-game #targetSummary { flex:1 1 0 !important; min-width:0 !important; overflow:hidden !important; height:44px !important; max-height:44px !important; display:flex !important; flex-direction:column !important; justify-content:center !important; }
+  body.in-game #targetSummary .target-info-wrap:not(.hidden) { overflow:hidden !important; max-height:42px !important; display:flex !important; flex-direction:column !important; justify-content:center !important; gap:1px !important; }
+  body.in-game #targetSummary #targetHint:not(.hidden) { display:flex !important; align-items:center; font-size:11.5px !important; font-weight:700; color:#9cb0c2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  body.in-game #targetSummary .target-head-row { display:flex !important; flex-direction:row !important; align-items:center !important; gap:4px !important; white-space:nowrap !important; overflow:hidden !important; height:18px !important; line-height:18px !important; min-width:0 !important; }
+  body.in-game #targetSummary .target-head-row strong { white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; flex:1 1 auto !important; min-width:50px !important; font-size:11.5px !important; }
+  body.in-game #targetSummary .target-head-row #targetCatPill { font-size:7.5px !important; padding:0 3px !important; flex-shrink:0 !important; white-space:nowrap !important; }
+  body.in-game #targetSummary .target-head-row #targetDefenseText { font-size:10px !important; flex-shrink:0 !important; max-width:80px !important; overflow:hidden !important; text-overflow:ellipsis !important; white-space:nowrap !important; }
+  body.in-game #targetSummary .target-strategic-info { display:flex !important; flex-direction:row !important; align-items:center !important; gap:3px !important; white-space:nowrap !important; overflow:hidden !important; height:16px !important; line-height:16px !important; font-size:8.5px !important; min-width:0 !important; }
+  body.in-game #targetSummary .target-strategic-info span { white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  body.in-game #targetSummary #battleForecast { display:none !important; }
+  body.in-game #targetBox #dispatchReason { display:none !important; }
+  body.in-game #dispatchActionBtn { width:138px !important; min-width:138px !important; flex:0 0 138px !important; height:44px !important; min-height:44px !important; padding:0 6px !important; }
+  body.in-game .battlefield-main { bottom:calc(var(--dock-height,154px) + 8px + env(safe-area-inset-bottom,0px)) !important; }
+  body.in-game .map-tools { right:max(7px,env(safe-area-inset-right,0px)); }
+  body.in-game .map-title-chip { padding:5px 8px !important; }
+  body.in-game :is(#toast, .notification-stack, .notify-item) { pointer-events:none !important; }
+}
+@media (max-width:360px) {
+  body.in-game .game-hud .hud-pill { padding:3px 6px !important; }
+  body.in-game .game-hud .hud-pill strong { font-size:17px; }
+  body.in-game .game-hud .hud-right .match-clock { min-width:28px; font-size:10px; }
+}
+@media (max-height:520px) and (min-width:480px) {
+  body.in-game #gameDock {
+    grid-template-columns: minmax(190px, 0.85fr) minmax(0, 1.4fr) !important;
+    grid-template-rows: 44px 44px !important;
+    padding: 3px 6px !important;
+    gap: 4px 8px !important;
+  }
+  body.in-game #activeBox {
+    grid-column: 1 !important;
+    grid-row: 1 / 3 !important;
+    height: 100% !important;
+    min-height: 88px !important;
+    padding: 0 4px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  body.in-game #activeBox #contextCastleView {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  body.in-game #activeBox .source-chip {
+    display: grid !important;
+    grid-template-columns: 1fr 44px 44px !important;
+    grid-template-rows: 1fr 44px !important;
+    width: 100% !important;
+    height: 100% !important;
+    align-items: center !important;
+  }
+  body.in-game #activeBox .source-icon {
+    display: none !important;
+  }
+  body.in-game #activeBox .source-meta {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+  body.in-game #activeBox .source-name-row {
+    min-width: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+  body.in-game #activeBox .source-name-row strong {
+    max-width: 120px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  body.in-game #activeBox .source-garrison-line {
+    display: flex !important;
+    flex-shrink: 0 !important;
+  }
+  body.in-game #activeBox .cycle-arrow-btn {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  body.in-game #activeBox .castle-manage-icon-btn {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
+  }
+  body.in-game #activeBox .castle-manage-icon-btn .mgmt-btn-label {
+    display: none !important;
+  }
+  body.in-game #tacticalControls {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+  body.in-game #targetBox {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+  body.in-game .battlefield-main {
+    bottom: calc(var(--dock-height, 98px) + 6px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+/* Subdued tactical map connection lines: faint idle, distinct active, elegant enemy */
+body.in-game #map .strategic-roads { pointer-events:stroke; }
+body.in-game #map .strategic-roads > path:not(.road-bed) {
+  fill:none !important; stroke:#aaa08a; stroke-width:1.1; stroke-dasharray:5 4; opacity:.18;
+  stroke-linejoin:round; stroke-linecap:round; pointer-events:stroke; cursor:pointer;
+  transition:opacity 0.22s ease, stroke-width 0.22s ease;
+}
+body.in-game[data-epoch="20th"] #map .strategic-roads > path:not(.road-bed) { stroke:#8f9692; }
+body.in-game #map .strategic-roads > path.road-bed {
+  fill:none !important; stroke:#161c17; stroke-width:2.6; opacity:.14;
+  stroke-linejoin:round; stroke-linecap:round; pointer-events:none;
+  transition:opacity 0.22s ease, stroke-width 0.22s ease;
+}
+/* Available routes from selected castle: slightly brighter than idle, soft */
+body.in-game #map .strategic-roads > path:not(.road-bed).road-available {
+  opacity:.42 !important; stroke-width:1.35; stroke-dasharray:6 3;
+}
+body.in-game #map .strategic-roads > path.road-bed.road-bed-available {
+  opacity:.26 !important; stroke-width:3.0;
+}
+/* Locked / irrelevant routes: even fainter than idle */
+body.in-game #map .strategic-roads > path:not(.road-bed).road-irrelevant {
+  opacity:.07 !important; stroke-width:0.9;
+}
+body.in-game #map .strategic-roads > path.road-bed.road-bed-irrelevant {
+  opacity:.05 !important; stroke-width:1.8;
+}
+/* Hovered line or selected destination route: stronger and clearer */
+body.in-game #map .strategic-roads > path:not(.road-bed):hover,
+body.in-game #map .strategic-roads > path:not(.road-bed).road-hovered,
+body.in-game #map .strategic-roads > path:not(.road-bed).road-selected {
+  opacity:.74 !important; stroke-width:1.6; stroke-dasharray:7 3;
+}
+body.in-game #map .strategic-roads > path.road-bed.road-bed-hovered,
+body.in-game #map .strategic-roads > path.road-bed.road-bed-selected {
+  opacity:.40 !important; stroke-width:3.6; stroke:#101915;
+}
+/* Active troop movement route: clear highlight with readable contrast */
+body.in-game #map .strategic-roads > path:not(.road-bed).road-active-friendly {
+  opacity:.65 !important; stroke:#7bb1d6 !important; stroke-width:1.5; stroke-dasharray:6 4;
+}
+body.in-game #map .strategic-roads > path.road-bed.road-bed-active-friendly {
+  opacity:.32 !important; stroke-width:3.4; stroke:#0d1a24;
+}
+/* Enemy attack route: distinct but elegant, not neon and not too thick */
+body.in-game #map .strategic-roads > path:not(.road-bed).road-active-enemy {
+  opacity:.68 !important; stroke:#c45d58 !important; stroke-width:1.5; stroke-dasharray:6 4;
+}
+body.in-game #map .strategic-roads > path.road-bed.road-bed-active-enemy {
+  opacity:.34 !important; stroke-width:3.4; stroke:#231114;
+}
+/* Active army route paths */
+body.in-game #map #routes .route { stroke-width:2.0; stroke-dasharray:6 5; }
+body.in-game #map #routes .route.route-friendly { stroke:#7bb1d6; opacity:.78; }
+body.in-game #map #routes .route.route-enemy { stroke:#c45d58; opacity:.75; }
+body.in-game #map .strategic-roads text { fill:#b8ad96 !important; opacity:0.40; }
+body.in-game .game-hud .hud-right .match-clock { border:0 !important; background:none !important; box-shadow:none !important; min-height:0 !important; height:auto !important; }
+
+/* Desktop commands share three bounded columns. Long forecasts cannot push Attack offscreen. */
+@media (min-width:901px) {
+  body.in-game #gameDock { display:grid !important; grid-template-columns:minmax(240px,1.2fr) auto minmax(280px,1.3fr) !important; align-items:stretch !important; height:66px !important; padding:6px 12px !important; gap:10px !important; }
+  body.in-game #gameDock .dock-section { min-width:0 !important; width:auto !important; margin:0 !important; }
+  body.in-game #gameDock .context-castle { display:flex; min-width:0; }
+  body.in-game #gameDock .source-chip { min-width:0 !important; flex:1; padding:0 !important; }
+  body.in-game #gameDock .source-meta { min-width:0; }
+  body.in-game #gameDock .source-name-row strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  body.in-game #gameDock #troopBar { display:none; }
+  body.in-game #gameDock .dock-tactics { justify-content:center; padding:0 10px !important; gap:6px !important; }
+  body.in-game #gameDock .dock-action { display:grid !important; grid-template-columns:minmax(0,1fr) 146px !important; grid-template-rows:auto auto !important; gap:2px 10px !important; padding:0 10px !important; align-items:center !important; align-content:center !important; min-width:0 !important; }
+  body.in-game #gameDock .target-chip { grid-column:1 !important; grid-row:1 !important; min-width:0 !important; max-width:none !important; text-align:left; }
+  body.in-game #gameDock .target-head-row { display:flex !important; align-items:center; gap:5px; min-width:0; }
+  body.in-game #gameDock #targetName { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  body.in-game #gameDock #dispatchActionBtn { grid-column:2 !important; grid-row:1 / 3 !important; width:146px !important; min-width:0; padding:6px; height:44px !important; align-self:center !important; }
+  body.in-game #gameDock #dispatchReason { grid-column:1 !important; grid-row:2 !important; font-size:10px !important; color:#c4d0dc !important; text-align:left !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; line-height:1.2 !important; pointer-events:none !important; }
+  body.in-game #gameDock #dispatchReason:empty { display:none !important; }
+  body.in-game #gameDock :is(.pct-btn,.all-btn,.strip-route-btn,.reserve-btn,.cycle-arrow-btn,.castle-manage-icon-btn) { min-height:44px !important; min-width:44px !important; }
+}
+@media (min-width:901px) and (max-width:1199px) {
+  body.in-game #gameDock { grid-template-columns:minmax(200px,1fr) auto minmax(240px,1.2fr) !important; }
+  body.in-game #gameDock .kbd-sub,body.in-game #gameDock .kbd-pill { display:none; }
+}
+body.in-game #map .castle .faction-flag { stroke:#111a22; stroke-width:1.2; }
+body.in-game #map .castle .castle-caption .troop-plate { fill:var(--faction-dark) !important; stroke:var(--faction) !important; }
+body.in-game #map .castle-caption .ownership-marker { stroke:#e4ded0; stroke-width:.4; }
+body.in-game #map .castle-caption .castle-name { font-variant:normal; }
+body.in-game #map .castle-caption .castle-benefit-tag { letter-spacing:0.02em; }
+/* Camera and anchor transforms must update atomically, including reduced-motion mode. */
+body.in-game #map :is(.castle,.castle-caption,.castle-banner-group) { transition:none !important; }
+body.in-game #map :is(.source-halo,.target-halo) { animation:none !important; transition:none !important; transform:none !important; filter:none !important; }
+body.in-game #gameDock #dispatchActionBtn .kbd-pill { display:none; }
+
+body.in-game .game-hud .crown-gold-svg { filter:none !important; color:#bba474; }
+body.in-game .map-tools .svg-icon { width:18px; height:18px; }
+
+/* TACTICAL MAP LEGEND & MODAL STYLING */
+body.in-game .legend-toggle-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+body.in-game .tactical-legend-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(3, 7, 12, 0.78);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+body.in-game .tactical-legend-modal.hidden {
+  display: none !important;
+}
+body.in-game .legend-card {
+  background: linear-gradient(180deg, #0e1724 0%, #060b12 100%);
+  border: 1px solid #756342;
+  border-radius: 4px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(220, 195, 140, 0.25);
+  max-width: 620px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 18px 20px;
+  color: #e5ded0;
+}
+body.in-game .legend-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #362e20;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+body.in-game .legend-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+body.in-game .legend-title-icon {
+  font-size: 16px;
+}
+body.in-game .legend-title-row h3 {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: #f2e8d4;
+}
+body.in-game .legend-close-btn {
+  background: transparent;
+  border: 1px solid #3a4752;
+  color: #b0bfc8;
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+body.in-game .legend-close-btn:hover {
+  border-color: #8c723b;
+  color: #fff;
+  background: #17222c;
+}
+body.in-game .legend-sub {
+  font-size: 11.5px;
+  color: #9cb0bc;
+  margin: 0 0 12px 0;
+}
+body.in-game .legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 8px;
+}
+body.in-game .legend-item {
+  background: rgba(11, 20, 30, 0.72);
+  border: 1px solid #203140;
+  border-radius: 3px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+body.in-game .legend-item-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+body.in-game .legend-icon {
+  font-size: 14px;
+}
+body.in-game .legend-cat-name {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: #eee5d4;
+  flex: 1;
+}
+body.in-game .legend-tag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+body.in-game .tag-gold { background: rgba(212, 179, 95, 0.15); color: #d4b35f; border: 1px solid #d4b35f55; }
+body.in-game .tag-troop { background: rgba(95, 168, 121, 0.15); color: #5fa879; border: 1px solid #5fa87955; }
+body.in-game .tag-defense { background: rgba(92, 157, 196, 0.15); color: #5c9dc4; border: 1px solid #5c9dc455; }
+body.in-game .tag-attack { background: rgba(199, 93, 101, 0.15); color: #c75d65; border: 1px solid #c75d6555; }
+body.in-game .tag-support { background: rgba(217, 139, 72, 0.15); color: #d98b48; border: 1px solid #d98b4855; }
+body.in-game .tag-capital { background: rgba(181, 138, 224, 0.15); color: #b58ae0; border: 1px solid #b58ae055; }
+
+body.in-game .legend-yield {
+  font-size: 11px;
+  color: #cfd8dc;
+}
+body.in-game .legend-yield b {
+  color: #fff;
+}
+body.in-game .legend-buff {
+  font-size: 10.5px;
+  color: #9cb3c2;
+  line-height: 1.25;
+}
+body.in-game .legend-tip {
+  font-size: 9.5px;
+  color: #c4b07e;
+  font-style: italic;
+  margin-top: 1px;
+}
+
+/* Shaded modular assets include their own ground shadows; no cutout drop shadow. */
+body.in-game #map .evolved-structure { filter:none !important; }
+#map .army-token { cursor:pointer; pointer-events:auto; }
+#map .army-recall-pill { cursor:pointer; pointer-events:auto; transition:transform 0.15s ease, filter 0.15s ease; user-select:none; }
+#map .army-recall-pill:hover { filter:brightness(1.22); }
+#map .army-recall-pill:active { transform:translate(0, 39px) scale(0.95); }
+#map .army-composition { display:none; }
+#map .army-token:hover .army-composition, #map .army-token:focus .army-composition { display:block; }
+#map .clash-smoke { animation:skirmish-smoke 1.2s ease-in-out infinite alternate; }
+#map .clash-flash { animation:skirmish-flash .7s steps(2) infinite; }
+@keyframes skirmish-smoke { from {opacity:.1;transform:scale(.85)} to {opacity:.28;transform:scale(1.2)} }
+@keyframes skirmish-flash { 0%,70% {opacity:0} 80%,100% {opacity:.8} }
+@media (prefers-reduced-motion:reduce) { #map .clash-smoke,#map .clash-flash {animation:none} }
+
+/* Notification Stack in Battlefield UI */
+.notification-stack {
+  position: fixed;
+  top: calc(var(--hud-height, 64px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+}
+@media (max-width: 900px) {
+  .notification-stack {
+    top: calc(var(--hud-height, 46px) + 10px);
+    max-width: calc(100vw - 24px);
+    gap: 6px;
+  }
+}
+.notify-item {
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Outfit', -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.65), 0 2px 6px rgba(0,0,0,0.4);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+  transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1), transform 0.22s cubic-bezier(0.2, 0, 0, 1);
+  white-space: normal;
+  text-align: left;
+}
+.notify-item.notify-visible { opacity: 1; transform: translateY(0) scale(1); }
+.notify-item.notify-exit { opacity: 0; transform: translateY(-12px) scale(0.92); }
+.notify-item.notify-pulse { animation: notifyPulse 0.3s ease-out; }
+@keyframes notifyPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.notify-item.notify-urgent {
+  background: linear-gradient(135deg, rgba(58, 12, 16, 0.95), rgba(28, 7, 10, 0.96));
+  border: 1.5px solid #ff4444;
+  color: #fff1f1;
+  box-shadow: 0 0 16px rgba(255, 68, 68, 0.4), 0 8px 24px rgba(0, 0, 0, 0.7);
+  animation: urgentGlow 1.8s infinite alternate ease-in-out;
+}
+@keyframes urgentGlow {
+  0% { border-color: #ff4444; box-shadow: 0 0 12px rgba(255, 68, 68, 0.35); }
+  100% { border-color: #ff7777; box-shadow: 0 0 20px rgba(255, 100, 100, 0.6); }
+}
+.notify-item.notify-warning {
+  background: linear-gradient(135deg, rgba(38, 28, 8, 0.95), rgba(20, 15, 5, 0.96));
+  border: 1.5px solid #ffd700;
+  color: #fff6d6;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+.notify-item.notify-info {
+  background: linear-gradient(135deg, rgba(13, 27, 38, 0.95), rgba(7, 15, 23, 0.96));
+  border: 1.2px solid #54738c;
+  color: #e2ecf3;
+}
+.notify-icon { font-size: 15px; flex-shrink: 0; }
+.notify-text { line-height: 1.35; flex: 1; }
+.notify-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* Ensure any .hidden element in dock is never accidentally forced visible */
+body.in-game #gameDock .hidden,
+body.in-game #gameDock [hidden],
+body.in-game #targetBox .hidden,
+body.in-game #targetSummary .hidden,
+body.in-game #targetSummary .target-info-wrap.hidden,
+body.in-game #activeBox .hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

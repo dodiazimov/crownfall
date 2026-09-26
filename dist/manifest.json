@@ -1,0 +1,20 @@
+{
+  "name": "Crownfall · Real-Time Strategy",
+  "short_name": "Crownfall",
+  "description": "Tactical Real-Time Strategy and Castle Conquest Game",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#091827",
+  "theme_color": "#091827",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "strategy"]
+}

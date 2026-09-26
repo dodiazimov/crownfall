@@ -1,0 +1,34 @@
+{
+  "main": {
+    "width": 383,
+    "height": 328
+  },
+  "troop": {
+    "width": 384,
+    "height": 284
+  },
+  "gold": {
+    "width": 384,
+    "height": 277
+  },
+  "small": {
+    "width": 379,
+    "height": 252
+  },
+  "archer": {
+    "width": 380,
+    "height": 293
+  },
+  "knight": {
+    "width": 384,
+    "height": 311
+  },
+  "cavalry": {
+    "width": 384,
+    "height": 275
+  },
+  "elite": {
+    "width": 384,
+    "height": 366
+  }
+}

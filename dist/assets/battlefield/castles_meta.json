@@ -1,0 +1,50 @@
+{
+  "main": {
+    "width": 335,
+    "height": 450,
+    "anchorX": 0.499319461088717,
+    "anchorY": 0.95
+  },
+  "troop": {
+    "width": 312,
+    "height": 349,
+    "anchorX": 0.4906335875962044,
+    "anchorY": 0.95
+  },
+  "gold": {
+    "width": 337,
+    "height": 404,
+    "anchorX": 0.499386803809126,
+    "anchorY": 0.95
+  },
+  "small": {
+    "width": 261,
+    "height": 412,
+    "anchorX": 0.5018020016731193,
+    "anchorY": 0.95
+  },
+  "archer": {
+    "width": 300,
+    "height": 427,
+    "anchorX": 0.5041717190855122,
+    "anchorY": 0.95
+  },
+  "knight": {
+    "width": 329,
+    "height": 336,
+    "anchorX": 0.5002841936468343,
+    "anchorY": 0.95
+  },
+  "cavalry": {
+    "width": 325,
+    "height": 331,
+    "anchorX": 0.5182727246798436,
+    "anchorY": 0.95
+  },
+  "elite": {
+    "width": 292,
+    "height": 519,
+    "anchorX": 0.5008751902587519,
+    "anchorY": 0.95
+  }
+}

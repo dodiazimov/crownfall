@@ -1,0 +1,29 @@
+{
+  "name": "crownfall-offline-prototype",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Offline game; dependencies are needed only for optional interface tests.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/engine.test.js",
+    "test:camera": "node tests/camera.test.cjs",
+    "test:mobile": "node tests/mobile-visuals.test.cjs",
+    "test:career": "node tests/career.test.js",
+    "test:ui": "node tests/interface.test.mjs",
+    "test:server": "node --test tests/server.test.js",
+    "test:map": "node tests/map.test.cjs",
+    "test:browser": "node tests/browser.test.cjs",
+    "test:audit": "node tests/ui-audit.test.cjs",
+    "test:all": "node tests/engine.test.js && node tests/camera.test.cjs && node tests/career.test.js && node tests/interface.test.mjs && node --test tests/server.test.js",
+    "test:anchors": "node tests/castle-anchors.test.cjs",
+    "test:map-style": "node tests/map-style.test.cjs",
+    "test:map-audit": "node tests/map-audit.test.cjs",
+    "test:battlefield": "node tests/battlefield-layout.test.cjs",
+    "capture:battlefield": "node tests/capture-battlefield.cjs",
+    "test:castle-evolution": "node tests/castle-evolution.test.cjs"
+  },
+  "devDependencies": {
+    "happy-dom": "15.11.7",
+    "playwright": "^1.63.0"
+  }
+}
