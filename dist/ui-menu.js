@@ -28,29 +28,7 @@
     if (typeof root.syncHeroUI === 'function') root.syncHeroUI();
     const soundOn = (root.CrownSound && root.CrownSound.isEnabled) ? root.CrownSound.isEnabled() : false;
     if ($('menuSoundIcon')) $('menuSoundIcon').textContent = soundOn ? '🔊' : '🔇';
-    if (window.requestIdleCallback) requestIdleCallback(loadHighResMenuBg);
-    else setTimeout(loadHighResMenuBg, 80);
-  }
-
-  let bgLoaded = false;
-  function loadHighResMenuBg() {
-    if (bgLoaded) return;
-    const highEl = $('menuSceneBgHigh');
-    if (!highEl) return;
-    const isMobile = window.innerWidth <= 768;
-    const targetSrc = isMobile ? 'assets/war_room_balcony_mobile.webp' : 'assets/war_room_balcony.webp';
-    const img = new Image();
-    img.src = targetSrc;
-    const finish = () => {
-      bgLoaded = true;
-      highEl.style.backgroundImage = `url('${targetSrc}')`;
-      highEl.classList.add('loaded');
-    };
-    if (img.decode) {
-      img.decode().then(finish).catch(finish);
-    } else {
-      img.onload = finish;
-    }
+    initProgressiveBackground();
   }
 
   function enterGameMode() {
@@ -337,7 +315,10 @@
     });
 
     // Hotkeys & rules modal triggers
-    if ($('menuHotkeysBtn')) $('menuHotkeysBtn').onclick = () => $('hotkeysDialog').showModal();
+    if ($('menuHotkeysBtn')) $('menuHotkeysBtn').onclick = () => {
+      if ($('helpDialog')?.open) $('helpDialog').close();
+      $('hotkeysDialog').showModal();
+    };
     if ($('closeHotkeysDialog')) $('closeHotkeysDialog').onclick = () => $('hotkeysDialog').close();
     if ($('closeHotkeysBtn')) $('closeHotkeysBtn').onclick = () => $('hotkeysDialog').close();
 
@@ -369,18 +350,24 @@
     scheduleIdlePrefetch();
   }
 
-  let highResLoaded = false;
+  let backgroundRequested = '';
+  let backgroundLoaded = '';
   function initProgressiveBackground() {
-    if (highResLoaded) return;
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const highLayer = $('menuSceneBgHigh');
+    if (!highLayer) return;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
     const highResUrl = isMobile ? 'assets/war_room_balcony_mobile.webp' : 'assets/war_room_balcony.webp';
+    if (backgroundRequested === highResUrl) return;
+    backgroundRequested = highResUrl;
+    // Cancels any obsolete pending request when rotating back to a loaded layout.
+    if (backgroundLoaded === highResUrl) return;
     const img = new Image();
     img.decoding = 'async';
     img.src = highResUrl;
 
     const applyHighRes = () => {
-      highResLoaded = true;
-      const highLayer = $('menuSceneBgHigh');
+      if (backgroundRequested !== highResUrl) return;
+      backgroundLoaded = highResUrl;
       const lowLayer = $('menuSceneBgLow');
       if (highLayer) {
         highLayer.style.backgroundImage = `url('${highResUrl}')`;
@@ -394,9 +381,12 @@
     };
 
     if (img.decode) {
-      img.decode().then(applyHighRes).catch(applyHighRes);
+      img.decode().then(applyHighRes).catch(() => {
+        if (backgroundRequested === highResUrl) backgroundRequested = '';
+      });
     } else {
       img.onload = applyHighRes;
+      img.onerror = () => { if (backgroundRequested === highResUrl) backgroundRequested = ''; };
     }
   }
 
@@ -414,6 +404,9 @@
   }
 
   if (typeof document !== 'undefined') {
+    window.matchMedia('(max-width: 900px)').addEventListener('change', () => {
+      if (document.body.classList.contains('in-menu')) initProgressiveBackground();
+    });
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         initProgressiveBackground();

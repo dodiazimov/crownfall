@@ -412,7 +412,7 @@
       const curDist = Math.hypot(a.x-b.x,a.y-b.y);
       zoomTo(pinchStart.zoom * (curDist / Math.max(1, pinchStart.distance)), pinchStart.cx, pinchStart.cy);
       e.preventDefault();
-    } else if(pointerStart&&!pointerStart.onCastle&&(cam.w<WORLD_W||cam.h<WORLD_H)){
+    } else if(pointerStart&&!api.isDragonTargeting?.()&&!pointerStart.onCastle&&(cam.w<WORLD_W||cam.h<WORLD_H)){
       const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;
       if(Math.hypot(dx,dy)>4)gesture=true;
       if(gesture){

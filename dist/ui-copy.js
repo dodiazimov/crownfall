@@ -1,6 +1,47 @@
 /* Presentation copy shared by menus, commander selection and live commands.
    Hero bonuses describe existing engine rules; no difficulty ratings are invented. */
 (function () {
+  const menu = {
+    en: {
+      menu_training_title: 'Training', menu_training_hint: 'Sharpen your tactics against AI',
+      menu_war_room: 'War room', brand_tagline: 'Real-time strategy',
+      menu_intro: 'Build your army. Capture castles. Hold the crown.',
+      menu_start_battle: 'Start battle', menu_solo_hint: 'Single player · AI opponent',
+      menu_online_battle: 'Online battle', menu_online_hint: 'Find an opponent',
+      menu_with_friend: 'Play with a friend', menu_friend_hint: 'Create or join a room',
+      menu_practice: 'Practice against AI', menu_battlefield: 'Battlefield', menu_change_map: 'Change map',
+      menu_commanders: 'Commanders', menu_profile: 'Profile', menu_settings: 'Settings', menu_help: 'Help',
+      menu_no_battles: 'No battles yet', menu_winrate: 'win rate', menu_random_map: 'Random battlefield',
+      menu_prototype: 'Open 3D prototype ↗'
+    },
+    ru: {
+      menu_training_title: 'Тренировка', menu_training_hint: 'Отточите тактику против ИИ',
+      menu_war_room: 'Военный совет', brand_tagline: 'Стратегия в реальном времени',
+      menu_intro: 'Соберите армию. Захватите замки. Удержите корону.',
+      menu_start_battle: 'Начать битву', menu_solo_hint: 'Одиночная игра · Соперник ИИ',
+      menu_online_battle: 'Битва онлайн', menu_online_hint: 'Найти соперника',
+      menu_with_friend: 'Игра с другом', menu_friend_hint: 'Создать комнату или войти по коду',
+      menu_practice: 'Тренировка против ИИ', menu_battlefield: 'Поле битвы', menu_change_map: 'Выбрать карту',
+      menu_commanders: 'Полководцы', menu_profile: 'Профиль', menu_settings: 'Настройки', menu_help: 'Помощь',
+      menu_no_battles: 'Пока нет сражений', menu_winrate: 'побед', menu_random_map: 'Случайная карта',
+      menu_prototype: 'Открыть 3D-прототип ↗'
+    },
+    uz: {
+      menu_training_title: 'Mashg‘ulot', menu_training_hint: 'AI raqibga qarshi taktikani sinang',
+      menu_war_room: 'Harbiy kengash', brand_tagline: 'Real vaqtli strategiya',
+      menu_intro: 'Armiya tuzing. Qal’alarni egallang. Tojni saqlab qoling.',
+      menu_start_battle: 'Jang boshlash', menu_solo_hint: 'Yakka o‘yin · AI raqib',
+      menu_online_battle: 'Onlayn jang', menu_online_hint: 'Raqib topish',
+      menu_with_friend: 'Do‘st bilan', menu_friend_hint: 'Xona ochish yoki kod bilan kirish',
+      menu_practice: 'AI bilan mashq', menu_battlefield: 'Jang maydoni', menu_change_map: 'Xaritani tanlash',
+      menu_commanders: 'Sarkardalar', menu_profile: 'Profil', menu_settings: 'Sozlamalar', menu_help: 'Yordam',
+      menu_no_battles: 'Hali jang bo‘lmagan', menu_winrate: 'g‘alaba', menu_random_map: 'Tasodifiy xarita',
+      menu_prototype: '3D prototipni ochish ↗'
+    }
+  };
+  for (const [lang, values] of Object.entries(menu)) Object.assign(CrownI18n.TRANSLATIONS[lang], values);
+})();
+(function () {
   const copy = {
     en: {
       ui_war_council:'Crownfall · War council', hero_pick_title:'Choose your commander',
@@ -82,4 +123,74 @@
     uz:{ui_single_source:'Faqat tanlangan qal’a',ui_selection_cleared:'Nishon bekor qilindi',ui_online_clock:'Onlayn jang server vaqti bilan ishlaydi; pauza va tezlik o‘zgarishi yo‘q.',ui_resume:'Davom etish',ui_pause:'Pauza',ui_next_castle:'Keyingi o‘z qal’angiz',ui_zoom_in:'Yaqinlashtirish',ui_zoom_out:'Uzoqlashtirish',ui_zoom_reset:'Ko‘rinishni tiklash',ui_group_forecast:'Armiyalar birga yetib boradi, ammo alohida jang qiladi. Ob-havo va yo‘l jangi natijani o‘zgartirishi mumkin.',ui_captured:'Qal’a egallandi',ui_lost:'Qal’a yo‘qotildi · topish uchun bosing',ui_threat:'Hujum ostida',ui_tour:'Tezkor boshlash',ui_coach1:'Nishonni tanlang',ui_coach1_desc:'Sizning qal’angiz tanlangan. Xaritadan nishon tanlang.',ui_coach2:'Armiyani tanlang',ui_coach2_desc:'25%, 50%, 75% yoki 100% tanlang. Jang taxminini ko‘ring.',ui_coach3:'Qo‘shin yuboring',ui_coach3_desc:'Hujumni bosing. Har qal’a o‘z askarlarini yuboradi. Omon qolganlar egallangan qal’ada qoladi.',ui_reset_stats:'Statistikani tozalash?',ui_reset_stats_body:'Mahalliy jang tarixi, martaba va yutuqlar o‘chiriladi.',ui_reset:'Tozalash',ui_cancel:'Bekor qilish',ui_stats_reset:'Statistika tozalandi.',quality_auto:'Avtomatik',quality_low:'Past · kam effektlar',quality_medium:'O‘rtacha · muvozanatli',quality_high:'Yuqori · to‘liq effektlar',ui_troops_title:'Qo‘shin yollash',ui_train:'Yollash',ui_soldier:'Piyoda askar',ui_archer:'O‘qchi',ui_knight:'Ritsar',ui_cavalry:'Otliq askar',ui_queue_label:'Yollash navbati',ui_cancel_train:'Bekor qilish',ui_train_hint:'Oltin evaziga maxsus qo‘shinlarni yollang.',ui_train_cost:'Narxi',ui_train_time:'Vaqti',ui_locked:'Qulflangan',ui_dragon_strike:'Ajdaho zarbasi',ui_dragon_hint:'Dushman qo‘shinlarini kuydiring va istehkomlarni yondiring (1000 oltin).',ui_dragon_ready:'Ajdaho tayyor',ui_dragon_cooldown:'Qayta tiklanish',ui_dragon_confirm:'Ajdahoni yuborish',ui_dragon_cancel:'Zarপরni bekor qilish',ui_dragon_warning:'Nishon hududini tanlang',ui_scorched_badge:'Yondirilgan',ui_army_details:'Armiya tafsilotlari',ui_recall_army:'Armiyani qaytarish',ui_in_battle:'Yo‘l jangida qatnashmoqda',ui_eta:'Yetib borish',ui_composition:'Tarkibi',map_europe_1805:'Yevropa 1805 (Napoleon davri)',map_orient_empires:'Sharq imperiyalari',era_medieval:'O‘rta asrlar',era_napoleonic:'Napoleon davri',era_orient:'Sharq sulolalari'}
   };
   for(const [lang,values] of Object.entries(additions))Object.assign(CrownI18n.TRANSLATIONS[lang],values);
+})();
+
+/* Castles grant passive bonuses; all armies use a single troop count. */
+(function () {
+  const copy = {
+    en: {
+      ui_castle_buffs: 'Castle bonus', ui_auto_garrison: 'Troops grow automatically in owned castles. Special castles grant passive bonuses.',
+      hotkey_manage: '<b>Castle management:</b> Open or close the panel with Tab or M. Shift+Tab and Tab inside dialogs navigate controls.',
+      hotkey_recall: '<b>Recall:</b> Return the selected marching army to an allied castle.',
+      buff_archer_desc: '+15% defense for this castle’s garrison.',
+      buff_knight_desc: 'Armies departing this castle gain +25% march speed and +20% siege strength.',
+      buff_cavalry_desc: 'Armies departing this castle gain +25% march speed.',
+      buff_small_desc: '+20% local defense and +15% defense for nearby allied castles within 520 map units.',
+      buff_gold_desc: 'Higher automatic Gold income for your faction; fund castle upgrades.',
+      buff_troop_desc: 'Faster automatic troop growth in this garrison.',
+      buff_elite_desc: '+1 troop/s in this garrison and the Crown Control victory core.',
+      buff_main_desc: 'Your capital automatically produces troops and shared Gold.',
+      buff_scope_local: 'Local garrison', buff_scope_nearby: 'Local garrison and nearby allies',
+      buff_scope_army: 'Armies departing this castle', buff_scope_economy: 'Faction economy',
+      buff_defense_legend: 'Defense Tower: +15% local defense. Watch Keep: +20% local defense and +15% defense for nearby allies.',
+      audit_friendly_help: 'Select a friendly castle as your source. Shift-click or drag to another ally to reinforce. C cycles castles; Tab opens management.',
+      audit_special_buildings: 'Castles automatically produce troops and Gold. Special castles grant defense, siege strength or speed bonuses.',
+      rules_p3: '<b>Combat:</b> All troops share one strength. Castle and commander bonuses modify defense, siege strength and march speed. Survivors hold captured castles.',
+      passive_archer: '+15% local garrison defense', passive_knight: '+25% march speed and +20% siege strength',
+      passive_watch: '+20% local defense; +15% nearby allied defense', weather_snow_desc: 'Snowfall across the battlefield'
+    },
+    uz: {
+      ui_castle_buffs: 'Qal’a bonusi', ui_auto_garrison: 'Qo‘shin o‘z qal’alaringizda avtomatik ko‘payadi. Maxsus qal’alar doimiy bonus beradi.',
+      hotkey_manage: '<b>Qal’a boshqaruvi:</b> Tab yoki M panelni ochadi va yopadi. Shift+Tab va dialog ichidagi Tab tugmalar bo‘ylab yuradi.',
+      hotkey_recall: '<b>Qaytarish:</b> Tanlangan yo‘ldagi armiyani o‘z qal’angizga qaytaradi.',
+      buff_archer_desc: 'Ushbu qal’a garnizoniga +15% himoya.',
+      buff_knight_desc: 'Ushbu qal’adan chiqqan armiyalarga +25% yurish tezligi va +20% hujum kuchi.',
+      buff_cavalry_desc: 'Ushbu qal’adan chiqqan armiyalarga +25% yurish tezligi.',
+      buff_small_desc: 'Qal’aga +20% himoya va 520 xarita birligi ichidagi yaqin ittifoqchi qal’alarga +15% himoya.',
+      buff_gold_desc: 'Davlatingizga ko‘proq avtomatik oltin daromadi; qal’alarni yaxshilash uchun.',
+      buff_troop_desc: 'Ushbu qal’a garnizonida qo‘shin tezroq avtomatik ko‘payadi.',
+      buff_elite_desc: 'Ushbu garnizonga +1 askar/s va Crown Control g‘alaba o‘zagi.',
+      buff_main_desc: 'Poytaxtingiz avtomatik qo‘shin va umumiy oltin ishlab chiqaradi.',
+      buff_scope_local: 'Ushbu qal’a garnizoni', buff_scope_nearby: 'Ushbu qal’a va yaqin ittifoqchilar',
+      buff_scope_army: 'Ushbu qal’adan chiqqan armiyalar', buff_scope_economy: 'Davlat iqtisodiyoti',
+      buff_defense_legend: 'Himoya minorasi: +15% himoya. Kuzatuv qal’asi: +20% mahalliy himoya va yaqin ittifoqchilarga +15% himoya.',
+      audit_friendly_help: 'O‘z qal’angizni manba sifatida tanlang. Yordam uchun Shift bilan bosing yoki chiziq torting. C qal’alarni almashtiradi; Tab boshqaruvni ochadi.',
+      audit_special_buildings: 'Qal’alar avtomatik qo‘shin va oltin ishlab chiqaradi. Maxsus qal’alar himoya, hujum yoki tezlik bonusini beradi.',
+      rules_p3: '<b>Jang:</b> Qo‘shinlar bitta kuch bilan hisoblanadi. Qal’a va sarkarda bonuslari himoya, hujum va yurish tezligiga ta’sir qiladi. Omon qolganlar egallangan qal’ada qoladi.',
+      passive_archer: '+15% mahalliy himoya', passive_knight: '+25% yurish tezligi va +20% hujum kuchi',
+      passive_watch: '+20% mahalliy va +15% yaqin ittifoqchilar himoyasi', weather_snow_desc: 'Jang maydonida qor yog‘moqda'
+    },
+    ru: {
+      ui_castle_buffs: 'Бонус замка', ui_auto_garrison: 'Войска автоматически растут в ваших замках. Особые замки дают пассивные бонусы.',
+      hotkey_manage: '<b>Управление замком:</b> Tab или M открывает и закрывает панель. Shift+Tab и Tab в диалогах перемещают фокус.',
+      hotkey_recall: '<b>Отозвать:</b> Вернуть выбранную армию в свой замок.',
+      buff_archer_desc: '+15% защиты гарнизону этого замка.',
+      buff_knight_desc: 'Армии из этого замка получают +25% скорости марша и +20% силы штурма.',
+      buff_cavalry_desc: 'Армии из этого замка получают +25% скорости марша.',
+      buff_small_desc: '+20% местной защиты и +15% защиты союзным замкам в радиусе 520 единиц карты.',
+      buff_gold_desc: 'Повышенный автоматический доход золота для улучшения замков.',
+      buff_troop_desc: 'Ускоренный автоматический прирост войск в этом гарнизоне.',
+      buff_elite_desc: '+1 воин/с в этом гарнизоне и центр победы Crown Control.',
+      buff_main_desc: 'Столица автоматически производит войска и общее золото.',
+      buff_scope_local: 'Местный гарнизон', buff_scope_nearby: 'Местный гарнизон и соседние союзники',
+      buff_scope_army: 'Армии из этого замка', buff_scope_economy: 'Экономика фракции',
+      buff_defense_legend: 'Башня защиты: +15% местной защиты. Сторожевой замок: +20% местной и +15% защиты соседних союзников.',
+      audit_friendly_help: 'Выберите свой замок. Для подкрепления используйте Shift или перетаскивание. C меняет замки; Tab открывает управление.',
+      audit_special_buildings: 'Замки автоматически производят войска и золото. Особые замки дают бонусы защиты, штурма или скорости.',
+      rules_p3: '<b>Бой:</b> Все войска имеют одинаковую силу. Бонусы замков и командиров меняют защиту, силу штурма и скорость. Выжившие остаются в захваченном замке.',
+      passive_archer: '+15% местной защиты', passive_knight: '+25% скорости марша и +20% силы штурма',
+      passive_watch: '+20% местной и +15% защиты соседних союзников', weather_snow_desc: 'Снег на поле боя'
+    }
+  };
+  for (const [lang, values] of Object.entries(copy)) Object.assign(CrownI18n.TRANSLATIONS[lang], values);
 })();

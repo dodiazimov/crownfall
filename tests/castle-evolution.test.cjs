@@ -27,7 +27,7 @@ report.multiplayer={maxLevel:5,eraPreserved:true,snapshotValid:true};
 report.engine={eraRoleUpgradeSequences:32,maxLevel:5};
 (async()=>{const browser=await chromium.launch({args:['--no-sandbox']});const errors=[];try{
  const p=await browser.newPage({viewport:{width:1440,height:1000}});p.on('pageerror',e=>errors.push(e.message));
- await p.addInitScript(()=>localStorage.setItem('crownfall-tour','done'));await p.goto('http://localhost:4173');
+ await p.addInitScript(()=>localStorage.setItem('crownfall-tour','done'));await p.goto(process.env.CROWNFALL_URL || 'http://localhost:4173');
  await p.evaluate(()=>{CrownI18n.setLanguage('en');enterGameMode();matchActive=false;document.getElementById('coach').classList.add('hidden');});
  report.matrix=await p.evaluate(()=>{
   const check=(v,m)=>{if(!v)throw Error(m)};let nodes=0,upgrades=0;

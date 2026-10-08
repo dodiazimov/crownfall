@@ -11,8 +11,10 @@
   let previewKey = '';
   const setText = (node, value) => { if (node && node.textContent !== value) node.textContent = value; };
   const setHTML = (node, value) => { if (node && node.innerHTML !== value) node.innerHTML = value; };
+  const setAttr = (node, name, value) => { const text=String(value); if(node.getAttribute(name)!==text)node.setAttribute(name,text); };
   const marching = new Map();
-  let battleVisualKey='';
+  const battleNodes = new Map(), effectNodes = new Map();
+  let dragonVisualKey='', dragonParts=null;
   let ownershipKey = '';
   let visualEpoch='18th';
   let labelGeneration=0;
@@ -328,7 +330,7 @@
   }
 
   function polyCell(point, all) {
-    let poly = [[0,0],[2200,0],[2200,1400],[0,1400]];
+    let poly = [[0,0],[2200,0],[2200,1500],[0,1500]];
     for (const q of all) {
       if (q.id === point.id) continue;
       const nx=q.x-point.x, ny=q.y-point.y, k=(q.x*q.x+q.y*q.y-point.x*point.x-point.y*point.y)/2;
@@ -460,7 +462,7 @@
   }
 
   function init(s) {
-    cache.clear(); castleDetails.clear(); previewKey=''; marching.clear(); ownershipKey=''; battleVisualKey=''; lastRoadStateKey = null; currentHoverCastleId = null; lastRenderState = null;
+    cache.clear(); castleDetails.clear(); previewKey=''; marching.clear(); battleNodes.clear(); effectNodes.clear(); dragonVisualKey=''; dragonParts=null; ownershipKey=''; lastRoadStateKey = null; currentHoverCastleId = null; lastRenderState = null;
     const mIdx = s.mapIndex || 0;
     const vis = MAP_VISUALS[mIdx] || MAP_VISUALS[0];
     const isLow = qualityLevel === 'low';
@@ -478,7 +480,7 @@
 
     const epochProps = generateEpochProps(s, epoch, isLow ? 12 : isMed ? 32 : 55, safeProp);
 
-    $('map').setAttribute('viewBox', '0 0 2200 1400');
+    $('map').setAttribute('viewBox', '0 0 2200 1500');
     $('map').classList.toggle('plate-map', Style.hasTerrainPlate(mIdx));
     const riverElem = vis.river ? `<path d="${vis.river}" stroke="#626c65" stroke-width="24" fill="none"/><path d="${vis.river}" stroke="#122f3c" stroke-width="18" fill="none"/><path d="${vis.river}" stroke="#294957" stroke-width="11" fill="none"/>` : '';
 
@@ -509,7 +511,7 @@
         <image class="war-ground" href="${terrainUrl}"${deferredAttr} x="0" y="0" width="2200" height="1500" preserveAspectRatio="none"/>
       </g>
       <g id="territories" clip-path="url(#landclip)">${s.castles.filter(c=>c.owner).map(c=>`<polygon id="region${c.id}" class="territory" points="${polyCell(c,s.castles)}" fill="url(#region-${c.owner})" stroke="${colors[c.owner]}" stroke-width="1.8" stroke-opacity=".55" stroke-dasharray="6 4"/>`).join('')}</g>
-      ${Style.dressing(s, vis, qualityLevel)}
+      <g class="quality-dressing">${Style.dressing(s, vis, qualityLevel)}</g>
       <g class="epoch-props" pointer-events="none">${Style.material(epochProps)}</g>
     ` : `
       <g clip-path="url(#landclip)">
@@ -519,7 +521,7 @@
           ${riverElem}
           ${vis.structures||''}
         </g>
-        ${Style.dressing(s, vis, qualityLevel)}
+        <g class="quality-dressing">${Style.dressing(s, vis, qualityLevel)}</g>
         <g class="epoch-props" pointer-events="none">${Style.material(epochProps)}</g>
       </g>
     `}
@@ -553,14 +555,8 @@
     document.fonts?.ready.then(()=>{if(generation===labelGeneration)window.MobileGame?.syncCastleLabels();});
   }
 
-  const unitIcons = {soldier:'⚔', archer:'🏹', knight:'🛡', cavalry:'🐎', elite:'✦'};
-  const unitTypes = Object.keys(unitIcons);
-  function unitEntries(entity) {
-    const units = entity.units || {soldier: entity.count ?? entity.troops ?? 0};
-    return unitTypes.filter(type => units[type] > 0).map(type => [type, Math.floor(units[type])]);
-  }
-  function composition(entity, names = false) {
-    return unitEntries(entity).map(([type, count]) => `${(CrownEpochVisuals.mark(type,visualEpoch)||'V')}${names ? ' '+E.getTroopRoleInfo(visualEpoch,type).name : ''} ${count}`).join(' · ') || '—';
+  function composition(entity) {
+    return `⚔ ${Math.floor(entity.count ?? entity.troops ?? 0)}`;
   }
   function unitFigure(type, color) {
     return CrownEpochVisuals.figure(type,color,visualEpoch);
@@ -583,42 +579,53 @@
   }
 
   function syncRoadBattles(s) {
-    const el = $('roadBattles');
-    if (!el) return;
-    if (!s.battles || s.battles.length === 0) {
-      if (el.firstChild) el.replaceChildren();
-      battleVisualKey='';
-      return;
+    const el=$('roadBattles');if(!el)return;
+    const active=new Set(),armyById=new Map(s.armies.map(a=>[a.id,a]));
+    for(const b of s.battles||[]){
+      active.add(b.id);
+      let n=battleNodes.get(b.id);
+      if(!n){
+        const node=document.createElementNS(NS,'g');node.classList.add('road-battle-marker');node.dataset.battleId=b.id;node.style.cursor='pointer';
+        node.innerHTML='<ellipse class="clash-smoke" rx="23" ry="13" fill="#aaa38a" opacity=".19"/><path class="clash-flash" d="M-5-8L4 2M5-7L-3 1" stroke="#eddbac" stroke-width="1.4"/><g class="battle-power"><rect x="-38" y="-40" width="76" height="10" rx="5" fill="#0b1721cc" stroke="#ffeaa7" stroke-width="1.2"/></g><g class="battle-sides"/>';
+        el.appendChild(node);n={node,power:node.querySelector('.battle-power'),sides:node.querySelector('.battle-sides'),bars:new Map(),labels:new Map()};battleNodes.set(b.id,n);
+      }
+      setAttr(n.node,'transform',`translate(${b.x} ${b.y})`);
+      const sides={};
+      for(const id of b.armies){const a=armyById.get(id);if(!a||a.count<=0)continue;const side=sides[a.owner]||={count:0};side.count+=a.count;}
+      const owners=Object.keys(sides),keys=Object.keys(b.powerRatio||{});let x=-36;
+      n.power.style.display=keys.length?'':'none';
+      for(const owner of keys){
+        let bar=n.bars.get(owner);if(!bar){bar=document.createElementNS(NS,'rect');bar.setAttribute('y','-38.5');bar.setAttribute('height','7');bar.setAttribute('rx','2');bar.setAttribute('fill',colors[owner]||'#fff');n.power.appendChild(bar);n.bars.set(owner,bar);}
+        const width=Math.max(2,(b.powerRatio[owner]||0)*72);setAttr(bar,'x',x);setAttr(bar,'width',width);x+=width;
+      }
+      for(const [owner,bar] of n.bars)if(!keys.includes(owner)){bar.remove();n.bars.delete(owner);}
+      owners.forEach((owner,i)=>{
+        let label=n.labels.get(owner);if(!label){const node=document.createElementNS(NS,'g');node.classList.add('battle-composition');node.dataset.owner=owner;node.innerHTML=`<rect x="-90" y="-16" width="180" height="22" rx="5" fill="#071d2cf2" stroke="${colors[owner]}"/><text text-anchor="middle" fill="${colors[owner]}" font-size="14" font-weight="800"/>`;n.sides.appendChild(node);label={node,text:node.querySelector('text')};n.labels.set(owner,label);}
+        setAttr(label.node,'transform',`translate(0 ${38+i*24})`);setText(label.text,composition(sides[owner]));
+      });
+      for(const [owner,label] of n.labels)if(!owners.includes(owner)){label.node.remove();n.labels.delete(owner);}
     }
-    const nextBattleKey=JSON.stringify(s.battles.map(b=>[b.id,b.x,b.y,b.powerRatio,b.armies.map(id=>{const a=s.armies.find(a=>a.id===id);return a&&[a.owner,a.count,a.units];})]));
-    if(battleVisualKey===nextBattleKey)return;
-    battleVisualKey=nextBattleKey;
-    el.innerHTML = s.battles.map(b => {
-      const sides = {};
-      for (const army of s.armies.filter(a => b.armies.includes(a.id) && a.count > 0)) {
-        const side = sides[army.owner] ||= {units:{}};
-        for (const [type, count] of unitEntries(army)) side.units[type] = (side.units[type] || 0) + count;
+    for(const [id,n] of battleNodes)if(!active.has(id)){n.node.remove();battleNodes.delete(id);}
+  }
+
+  function syncEffects(s) {
+    const el=$('effects'),active=new Set(s.effects),isLow=qualityLevel==='low',pCount=qualityLevel==='medium'?4:10;
+    for(const [effect,n] of effectNodes)if(!active.has(effect)){n.node.remove();effectNodes.delete(effect);}
+    for(const e of s.effects){
+      let n=effectNodes.get(e);
+      const key=`${qualityLevel}:${e.owner}:${e.text}`;
+      if(!n||n.key!==key){
+        if(n)n.node.remove();
+        const node=document.createElementNS(NS,'g');
+        node.innerHTML=(isLow?'':`<ellipse cy="10" stroke="${colors[e.owner]}" fill="none"/>${Array.from({length:pCount},(_,i)=>`<circle fill="${i%2?'#fff1b5':colors[e.owner]}"/>`).join('')}`)+`<text text-anchor="middle" font-size="15" font-weight="${isLow?900:800}" fill="#fff6b9" paint-order="stroke" stroke="${isLow?'#102521':'#204439'}" stroke-width="3"/>`;
+        el.appendChild(node);n={node,key,text:node.querySelector('text'),ring:node.querySelector('ellipse'),particles:[...node.querySelectorAll('circle')]};setText(n.text,e.text);effectNodes.set(e,n);
       }
-      const sideLabels = Object.entries(sides).map(([owner, side], i) => `<g class="battle-composition" data-owner="${owner}" transform="translate(0 ${38+i*24})"><rect x="-90" y="-16" width="180" height="22" rx="5" fill="#071d2cf2" stroke="${colors[owner]}"/><text text-anchor="middle" fill="${colors[owner]}" font-size="14" font-weight="800">${escapeText(composition(side))}</text></g>`).join('');
-      const keys = Object.keys(b.powerRatio || {});
-      let barSvg = '';
-      if (keys.length > 0) {
-        let curX = -36;
-        const totalW = 72;
-        barSvg = `<rect x="-38" y="-40" width="76" height="10" rx="5" fill="#0b1721cc" stroke="#ffeaa7" stroke-width="1.2"/>` +
-          keys.map(k => {
-            const w = Math.max(2, (b.powerRatio[k] || 0) * totalW);
-            const r = `<rect x="${curX}" y="-38.5" width="${w}" height="7" rx="2" fill="${colors[k] || '#fff'}"/>`;
-            curX += w;
-            return r;
-          }).join('');
-      }
-      return `<g class="road-battle-marker" data-battle-id="${b.id}" style="cursor:pointer;" transform="translate(${b.x} ${b.y})">
-        <ellipse class="clash-smoke" rx="23" ry="13" fill="#aaa38a" opacity=".19"/>
-        <path class="clash-flash" d="M-5-8L4 2M5-7L-3 1" stroke="#eddbac" stroke-width="1.4"/>
-        ${barSvg}${sideLabels}
-      </g>`;
-    }).join('');
+      const t=(1.8-e.life)/1.8;
+      setAttr(n.node,'transform',`translate(${e.x} ${e.y})`);setAttr(n.node,'opacity',Math.min(1,e.life));
+      setAttr(n.text,'y',isLow?-45-t*20:-90-t*26);
+      if(n.ring){setAttr(n.ring,'rx',18+t*70);setAttr(n.ring,'ry',10+t*35);setAttr(n.ring,'stroke-width',4-t*3);}
+      n.particles.forEach((particle,i)=>{const angle=i*Math.PI/(pCount/2);setAttr(particle,'cx',Math.cos(angle)*t*64);setAttr(particle,'cy',-20+Math.sin(angle)*t*50-t*22);setAttr(particle,'r',3.5-t*2);});
+    }
   }
 
   function syncDragonStrike(s) {
@@ -627,14 +634,16 @@
     const strike = s.dragonStrike;
     if (!strike) {
       if (el.firstChild) el.replaceChildren();
+      dragonVisualKey='';dragonParts=null;
       return;
     }
+    const key=`${strike.state}:${strike.x}:${strike.y}`;
     if (strike.state === 'incoming') {
       const t = strike.timer;
       const pct = Math.max(0, t / (strike.totalTimer || 3.0));
       const shadowX = strike.x - pct * 340;
       const shadowY = strike.y - pct * 260;
-      el.innerHTML = `
+      if(dragonVisualKey!==key)el.innerHTML = `
         <g transform="translate(${strike.x} ${strike.y})">
           <circle r="190" fill="#9e3b3d18" stroke="#aa4545" stroke-width="2.5" stroke-dasharray="8 5"/>
           <circle r="130" fill="#9e3b3d22" stroke="#c5a059" stroke-width="2" stroke-dasharray="6 4"/>
@@ -646,8 +655,11 @@
           <path d="M0-22L-16-6L-38-16L-22 4L-42 16L-14 16L0 34L14 16L42 16L22 4L38-16L16-6Z" fill="#000" opacity="0.5"/>
         </g>
       `;
+      if(dragonVisualKey!==key)dragonParts={text:el.querySelector('text'),shadow:el.children[1]};
+      setText(dragonParts.text,`⚠️ ${t.toFixed(1)}s`);
+      setAttr(dragonParts.shadow,'transform',`translate(${shadowX} ${shadowY}) scale(2.0)`);
     } else if (strike.state === 'impact') {
-      el.innerHTML = `
+      if(dragonVisualKey!==key)el.innerHTML = `
         <g transform="translate(${strike.x} ${strike.y})">
           <circle r="210" fill="#aa454544" stroke="#8f3537" stroke-width="4"/>
           <circle r="130" fill="#c5a05955" stroke="#e2c68e" stroke-width="3"/>
@@ -655,19 +667,24 @@
         </g>
       `;
     }
+    dragonVisualKey=key;
   }
 
   function syncArmies(s) {
     const ids=new Set(s.armies.map(a=>a.id));
     for(const [id,n] of marching) if(!ids.has(id)){n.node.remove();n.route.remove();marching.delete(id);}
     const vb=$('map').viewBox.baseVal, zoom=2200/(vb.width||2200);
-    const budget=qualityLevel==='low'?(zoom<1.6?6:10):zoom<1.6?8:zoom<3?12:20;
+    const isLow=qualityLevel==='low',animateUnits=!isLow&&!reducedMotion&&!s.paused;
+    const budget=isLow?(zoom<1.6?3:4):zoom<1.6?8:zoom<3?12:20;
+    const battleByArmy=new Map();for(const battle of s.battles||[])for(const id of battle.armies)battleByArmy.set(id,battle);
     for(const a of s.armies) {
       const pos=E.position(a), next=E.position(a,.02);
       let n=marching.get(a.id);
       const visible=pos.x>vb.x-100&&pos.x<vb.x+vb.width+100&&pos.y>vb.y-100&&pos.y<vb.y+vb.height+100;
       if(!visible){if(n){n.node.style.display='none';n.route.style.display='none';}continue;}
-      const color=colors[a.owner]||'#acb3a7', peak=Math.max(n?.peak||0,a.count), slots=Math.max(1,Math.ceil(Math.min(budget,Math.ceil(Math.sqrt(peak)*1.65))*a.count/peak)), roster=CrownArmyArt.roster(a,slots);
+      const color=colors[a.owner]||'#acb3a7', peak=Math.max(n?.peak||0,a.count), slots=Math.max(1,Math.ceil(Math.min(budget,Math.ceil(Math.sqrt(peak)*1.65))*a.count/peak));
+      const rosterKey=`${slots}:${a.count}`;
+      const roster=n?.rosterKey===rosterKey?n.roster:CrownArmyArt.roster(a,slots).slice(0,isLow?slots:undefined);
       const typeKey=[visualEpoch,a.owner,...roster].join(':');
       if(!n){
         const node=document.createElementNS(NS,'g'),route=document.createElementNS(NS,'g');
@@ -681,52 +698,54 @@
         route.innerHTML=`<path class="${routeClass}" fill="none" stroke="${routeColor}" stroke-width="${routeW}" stroke-dasharray="6 5" opacity="${routeOp}"/><circle cx="${a.tx}" cy="${a.ty}" r="5.5" fill="${routeColor}22" stroke="${routeColor}" stroke-width="1.5" opacity=".8"/>`;
         $('routes').appendChild(route);$('movingArmies').appendChild(node);
         n={node,route,formation:node.querySelector('.formation'),dust:node.querySelector('.march-dust'),banner:node.querySelector('.army-banner'),count:node.querySelector('.army-count'),progress:node.querySelector('.army-progress'),composition:node.querySelector('.army-composition text'),recallPill:node.querySelector('.army-recall-pill'),recallText:node.querySelector('.army-recall-btn-text'),units:[]};
+        n.routePath=route.querySelector('path');n.routeEndpoint=route.querySelector('circle');n.dustParticles=[...n.dust.children];n.pillRect=n.recallPill.querySelector('rect');
         marching.set(a.id,n);
       }
-      n.peak=peak;n.node.style.display='';n.route.style.display=a.inBattle?'none':'';
+      n.peak=peak;n.roster=roster;n.rosterKey=rosterKey;n.node.style.display='';n.route.style.display=a.inBattle?'none':'';
       if(n.typeKey!==typeKey){
         n.formation.innerHTML=roster.map((type,i)=>`<image class="marcher" data-unit-type="${type}" x="-25" y="-46" width="52" height="58" href="${CrownArmyArt.sprite(type,color,visualEpoch,i%2)}"/>`).join('');
         n.units=[...n.formation.children];n.typeKey=typeKey;n.frame=-1;
       }
-      n.node.dataset.lod=budget;n.node.dataset.era=visualEpoch;n.node.dataset.owner=a.owner;
-      n.node.setAttribute('aria-label',`${a.owner}: ${composition(a,true)}`);
+      setAttr(n.node,'data-lod',budget);setAttr(n.node,'data-era',visualEpoch);setAttr(n.node,'data-owner',a.owner);
+      const compositionKey=`${visualEpoch}:${a.owner}:${rosterKey}`;
+      if(n.compositionKey!==compositionKey){setAttr(n.node,'aria-label',`${a.owner}: ${composition(a,true)}`);setText(n.composition,composition(a));n.compositionKey=compositionKey;}
       let dx=next.x-pos.x,dy=next.y-pos.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len,px=pos.x,py=pos.y;
-      if(a.inBattle){const battle=s.battles?.find(b=>b.armies.includes(a.id));if(battle){const side=Object.keys(battle.powerRatio||{}).indexOf(a.owner)>0?1:-1;px=battle.x+side*27;py=battle.y;ux=-side;uy=0;}}
-      n.node.setAttribute('transform',`translate(${px} ${py})`);
-      if(n.revision!==a.revision){const src=s.castles[a.source],dst=s.castles[a.target];const drawn=(!a.returning&&!a.intercept)?CrownAnchors.route(s,a.path,src,dst):a.path;n.route.querySelector('path').setAttribute('d',CrownAnchors.path(drawn));const endpoint=n.route.querySelector('circle');endpoint.setAttribute('cx',a.tx);endpoint.setAttribute('cy',a.ty);n.revision=a.revision;}
-      const frame=reducedMotion||s.paused?0:Math.floor(s.time*(a.inBattle?7:5))%2;
+      if(a.inBattle){const battle=battleByArmy.get(a.id);if(battle){const side=Object.keys(battle.powerRatio||{}).indexOf(a.owner)>0?1:-1;px=battle.x+side*27;py=battle.y;ux=-side;uy=0;}}
+      setAttr(n.node,'transform',`translate(${px} ${py})`);
+      if(n.revision!==a.revision){const src=s.castles[a.source],dst=s.castles[a.target];const drawn=(!a.returning&&!a.intercept)?CrownAnchors.route(s,a.path,src,dst):a.path;setAttr(n.routePath,'d',CrownAnchors.path(drawn));setAttr(n.routeEndpoint,'cx',a.tx);setAttr(n.routeEndpoint,'cy',a.ty);n.revision=a.revision;}
+      const frame=animateUnits?Math.floor(s.time*(a.inBattle?7:5))%2:0;
+      if(!animateUnits){ux=Math.round(ux*10000)/10000;uy=Math.round(uy*10000)/10000;}
       const columns=roster.some(t=>t==='cavalry')?2:3,spacing=columns===2?18:11;
       n.units.forEach((unit,i)=>{
         const row=Math.floor(i/columns),side=i%columns-(columns-1)/2,stagger=(i%3-1)*.6;
-        const bob=reducedMotion||s.paused?0:Math.sin(s.time*12+i*2)*.55;
-        unit.setAttribute('transform',`translate(${-ux*row*12-uy*side*spacing+stagger} ${-uy*row*12+ux*side*spacing+bob}) scale(${ux<0?-.8:.8} .8)`);
+        const bob=animateUnits?Math.sin(s.time*12+i*2)*.55:0;
+        setAttr(unit,'transform',`translate(${-ux*row*12-uy*side*spacing+stagger} ${-uy*row*12+ux*side*spacing+bob}) scale(${ux<0?-.8:.8} .8)`);
         if(n.frame!==frame)unit.setAttribute('href',CrownArmyArt.sprite(roster[i],color,visualEpoch,(frame+i)%2));
       });n.frame=frame;
-      n.banner.setAttribute('transform',`translate(${-uy*14} ${ux*14})`);
-      n.dust.setAttribute('transform',`translate(${-ux*(Math.ceil(roster.length/columns)*12)} ${-uy*22+3})`);
-      n.dust.style.display=reducedMotion||s.paused||a.inBattle?'none':'';
-      n.dust.querySelectorAll('ellipse').forEach(e=>e.setAttribute('fill',s.weather?.type==='rain'?'#93aeb1':s.weather?.type==='snow'?'#cbd8d8':'#b1a68a'));
-      setText(n.count,(a.returning?'↩ ':'')+a.count);setText(n.composition,composition(a));
+      setAttr(n.banner,'transform',`translate(${-uy*14} ${ux*14})`);
+      n.dust.style.display=!animateUnits||a.inBattle?'none':'';
+      if(animateUnits&&!a.inBattle){setAttr(n.dust,'transform',`translate(${-ux*(Math.ceil(roster.length/columns)*12)} ${-uy*22+3})`);n.dustParticles.forEach(e=>setAttr(e,'fill',s.weather?.type==='rain'?'#93aeb1':s.weather?.type==='snow'?'#cbd8d8':'#b1a68a'));}
+      setText(n.count,(a.returning?'↩ ':'')+a.count);
       const isFriendly=(typeof myRole!=='undefined')?(a.owner===myRole):(a.owner==='blue');
       if(n.recallPill){
         if(isFriendly&&!a.inBattle){
           n.recallPill.style.display='';
-          const pillRect=n.recallPill.querySelector('rect');
+          const pillRect=n.pillRect;
           if(a.returning){
             n.recallPill.style.pointerEvents='none';
-            if(pillRect){pillRect.setAttribute('fill','#1e2d3bee');pillRect.setAttribute('stroke','#648da5');}
+            if(pillRect){setAttr(pillRect,'fill','#1e2d3bee');setAttr(pillRect,'stroke','#648da5');}
             setText(n.recallText,(window.CrownI18n?window.CrownI18n.t('ui_returning'):'↩ Qaytmoqda...'));
           }else{
             n.recallPill.style.pointerEvents='auto';
-            if(pillRect){pillRect.setAttribute('fill','#8c2527ee');pillRect.setAttribute('stroke','#f0a0a0');}
+            if(pillRect){setAttr(pillRect,'fill','#8c2527ee');setAttr(pillRect,'stroke','#f0a0a0');}
             setText(n.recallText,(window.CrownI18n?window.CrownI18n.t('ui_nazad'):'↩ Nazad'));
           }
         }else{
           n.recallPill.style.display='none';
         }
       }
-      if(n.lastCount>a.count&&!reducedMotion)n.formation.animate([{opacity:.45},{opacity:1}],{duration:240});
-      n.lastCount=a.count;n.progress.setAttribute('width',String(28*Math.min(1,a.t/a.duration)));
+      if(n.lastCount>a.count&&animateUnits)n.formation.animate([{opacity:.45},{opacity:1}],{duration:240});
+      n.lastCount=a.count;setAttr(n.progress,'width',28*Math.min(1,a.t/a.duration));
     }
   }
 
@@ -934,22 +953,7 @@
     }
 
     }
-    const isLow = qualityLevel === 'low';
-    const isMed = qualityLevel === 'medium';
-    if (!s.effects.length) {
-      if ($('effects').firstChild) $('effects').replaceChildren();
-    } else if (isLow) {
-      $('effects').innerHTML=s.effects.map(e=>{
-        const t=(1.8-e.life)/1.8;
-        return `<g opacity="${Math.min(1,e.life)}"><text x="${e.x}" y="${e.y-45-t*20}" text-anchor="middle" font-size="15" font-weight="900" fill="#fff6b9" paint-order="stroke" stroke="#102521" stroke-width="3">${escapeText(e.text)}</text></g>`;
-      }).join('');
-    } else {
-      const pCount = isMed ? 4 : 10;
-      $('effects').innerHTML=s.effects.map(e=>{
-        const t=(1.8-e.life)/1.8;
-        return`<g opacity="${Math.min(1,e.life)}"><ellipse cx="${e.x}" cy="${e.y+10}" rx="${18+t*70}" ry="${10+t*35}" stroke="${colors[e.owner]}" stroke-width="${4-t*3}" fill="none"/>${Array.from({length:pCount},(_,i)=>{const angle=i*Math.PI/(pCount/2);return`<circle cx="${e.x+Math.cos(angle)*t*64}" cy="${e.y-20+Math.sin(angle)*t*50-t*22}" r="${3.5-t*2}" fill="${i%2?'#fff1b5':colors[e.owner]}"/>`;}).join('')}<text x="${e.x}" y="${e.y-90-t*26}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff6b9" paint-order="stroke" stroke="#204439" stroke-width="3">${escapeText(e.text)}</text></g>`;
-      }).join('');
-    }
+    syncEffects(s);
 
     if (s.weather) {
       const atmo = $('weatherAtmosphere');
@@ -1177,9 +1181,16 @@
   function setQuality(lvl) {
     if (typeof lvl === 'boolean') lvl = lvl ? 'low' : 'high';
     if (['low', 'medium', 'high'].includes(lvl)) {
+      const changed=qualityLevel!==lvl;
       qualityLevel = lvl;
       document.body.dataset.quality = lvl;
       WeatherFX.setQuality();
+      if(changed&&lastRenderState){
+        const s=lastRenderState.s,vis=MAP_VISUALS[s.mapIndex||0]||MAP_VISUALS[0];
+        const dressing=document.querySelector('#map .quality-dressing'),props=document.querySelector('#map .epoch-props');
+        if(dressing)dressing.innerHTML=Style.dressing(s,vis,lvl);
+        if(props)props.innerHTML=Style.material(generateEpochProps(s,s.epoch||'18th',lvl==='low'?12:lvl==='medium'?32:55,Style.clearance(s,vis)));
+      }
     }
   }
 
@@ -1209,7 +1220,6 @@
     clearDragLine,
     setQuality,
     composition,
-    unitEntries,
     setAnchorDebug: enabled => $('map').classList.toggle('show-anchors', !!enabled),
     getQuality: () => qualityLevel,
     syncRoadStates,

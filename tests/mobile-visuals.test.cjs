@@ -12,7 +12,7 @@ try{for(const [width,height] of [[320,568],[390,844],[568,320],[667,375],[844,39
   const clear=CanvasRenderingContext2D.prototype.clearRect;
   CanvasRenderingContext2D.prototype.clearRect=function(...args){if(this.canvas.id==='menuAmbianceCanvas')window.hiddenMenuDraws++;return clear.apply(this,args)};
  });
- await page.goto('http://localhost:4173');await page.evaluate(()=>CrownI18n.setLanguage('en'));
+ await page.goto(process.env.CROWNFALL_URL || 'http://localhost:4173');await page.evaluate(()=>CrownI18n.setLanguage('en'));
  // Hidden battlefield must not consume DOM work behind the main menu.
  const mutations=await page.evaluate(async()=>{let count=0;const ob=new MutationObserver(rs=>count+=rs.length);ob.observe(document.getElementById('map'),{subtree:true,attributes:true,childList:true});await new Promise(r=>setTimeout(r,350));ob.disconnect();return count});assert.equal(mutations,0,'menu kept rendering hidden battlefield');
  assert.equal(await page.evaluate(()=>window.hiddenMenuDraws),0,'hidden menu canvas kept drawing');
@@ -26,7 +26,13 @@ try{for(const [width,height] of [[320,568],[390,844],[568,320],[667,375],[844,39
   const brand=await page.locator('.menu-brand-header').boundingBox();
   assert.ok(brand.y>=header.y+header.height,'menu profile overlaps the title');
  }
- for(const id of ['menuSettingsBtn','menuRulesBtn','menuHotkeysBtn']){await page.locator('#'+id).scrollIntoViewIfNeeded();assert.ok(await page.locator('#'+id).isVisible());}
+ for(const id of ['menuSettingsBtn','menuRulesBtn']){await page.locator('#'+id).scrollIntoViewIfNeeded();assert.ok(await page.locator('#'+id).isVisible());}
+ await page.locator('#menuRulesBtn').click();
+ assert.ok(await page.locator('#menuHotkeysBtn').isVisible(),'keyboard guide is unavailable in Help');
+ await page.locator('#menuHotkeysBtn').click();
+ assert.ok(await page.locator('#hotkeysDialog').isVisible());
+ assert.equal(await page.locator('#helpDialog').evaluate(el=>el.open),false,'Help stayed open behind the keyboard guide');
+ await page.locator('#closeHotkeysBtn').click();
  await page.click('#menuSinglePlayBtn');await page.click('#spHeroPickGrid [data-hero="vanguard"]');await page.locator('#battleSettings summary').click();await page.selectOption('#startMapSelect','0');await page.uncheck('#startRandomCastles');await page.click('#startGameBtn');await page.evaluate(()=>{state.aiDisabled=true});await page.waitForTimeout(350);
  let home=await page.locator('#castle0 .castle-hitbox').boundingBox();assert.ok(home.width>=44,`unusable castle target ${home.width}px`);
  for(const selector of ['#pause','#menuBtn','#moreCommandsBtn','#routeToggleBtn','#allCastlesBtn','#dispatchActionBtn','.pct-btn[data-percent="50"]']){
@@ -43,12 +49,15 @@ try{for(const [width,height] of [[320,568],[390,844],[568,320],[667,375],[844,39
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,...point}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:point.x-90,y:point.y}]});await page.waitForFunction(v=>document.getElementById('map').getAttribute('viewBox')!==v,before);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  assert.notEqual(await page.locator('#map').getAttribute('viewBox'),before,'touch pan failed');
- const pinchBefore=await page.locator('#map').getAttribute('viewBox');const y=point.y,x=Math.min(width/2,240);
+ const pinchBefore=await page.locator('#map').getAttribute('viewBox');
+ // Both contacts must start on the battlefield; the player table covers the left part of narrow screens.
+ const pinch=await page.evaluate(()=>{const m=document.getElementById('map').getBoundingClientRect();for(let y=m.top+60;y<m.bottom-60;y+=25)for(let x=70;x<innerWidth-70;x+=15)if([-25,25].every(dx=>{const e=document.elementFromPoint(x+dx,y);return e?.closest('#map')&&!e.closest('[data-id]')}))return{x,y};});assert.ok(pinch,'no area for two battlefield contacts');
+ const {x,y}=pinch;
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x:x-25,y},{id:2,x:x+25,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:x-65,y},{id:2,x:x+65,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  assert.ok(+((await page.locator('#map').getAttribute('viewBox')).split(' ')[2])<+pinchBefore.split(' ')[2],'pinch did not zoom');
  await page.locator('#zoomReset').tap();assert.ok(+((await page.locator('#map').getAttribute('viewBox')).split(' ')[2])>=2200);
  await page.locator('#focusHome').tap();home=await page.locator('#castle0 .castle-hitbox').boundingBox();assert.ok(home.width>=44);
- await page.locator('#moreCommandsBtn').tap();assert.ok(await page.locator('#openTrainingFromMgmtBtn').isVisible());await page.locator('#closeCastleMgmtBtn').tap();
+ await page.locator('#moreCommandsBtn').tap();assert.ok(await page.locator('#mgmtBuffDescription').isVisible());await page.locator('#closeCastleMgmtBtn').tap();
  const sizeBefore=(await page.locator('#castle0 .castle-hitbox').boundingBox()).width;
  await page.setViewportSize({width:height,height:width});await page.waitForTimeout(250);
  const sizeAfter=(await page.locator('#castle0 .castle-hitbox').boundingBox()).width;

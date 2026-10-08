@@ -10,7 +10,7 @@ const fs=require('node:fs');
  const page=await browser.newPage({viewport:{width,height:width===390?844:900},isMobile:width===390,hasTouch:width===390});
  page.on('pageerror',e=>errors.push(e.message));
  page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`)});
- await page.goto('http://localhost:4173');
+ await page.goto(process.env.CROWNFALL_URL || 'http://localhost:4173');
  await page.evaluate(()=>{CrownI18n.setLanguage('en');enterGameMode();document.querySelectorAll('dialog[open]').forEach(d=>d.close());document.getElementById('skipCoach')?.click();});
  for(let map=0;map<11;map++){
  const variations=await page.evaluate(({map,width})=>{

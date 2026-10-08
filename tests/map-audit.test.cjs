@@ -80,7 +80,7 @@ fs.mkdirSync(out, { recursive: true });
   page.on('pageerror', e => pageErrors.push(e.message));
 
   try {
-    await page.goto('http://localhost:4173');
+    await page.goto(process.env.CROWNFALL_URL || 'http://localhost:4173');
     await page.evaluate(() => {
       CrownI18n.setLanguage('en');
       enterGameMode();

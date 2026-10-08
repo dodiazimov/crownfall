@@ -19,7 +19,7 @@ function start(room) {
   // Empty seats on the selected layout become bots, never inactive factions.
   for (const role of ROLES.slice(0, room.maxPlayers)) {
     const slot = room.slots[role];
-    if (!slot.username) Object.assign(slot, {isBot: true, username: role.toUpperCase() + ' (AI)', ready: true, connected: true});
+    if (!slot.username || slot.connected === false) Object.assign(slot, {isBot: true, username: role.toUpperCase() + ' (AI)', ready: true, connected: true, ws: null, reconnectToken: null, reconnectUntil: 0});
   }
   const roomHeroes = {};
   for (const role of ROLES.slice(0, room.maxPlayers)) {
@@ -33,8 +33,9 @@ function start(room) {
   room.lastTick = Date.now();
 }
 
-function snapshot(room) {
-  return {type: 'state_snapshot', roomCode: room.code, revision: room.revision, state: room.state};
+function snapshot(room, role = null) {
+  const state = room.state ? {...room.state, orders: room.state.orders.filter(o => o.owner === role)} : null;
+  return {type: 'state_snapshot', roomCode: room.code, revision: room.revision, state};
 }
 
 function command(room, role, msg) {
@@ -61,28 +62,11 @@ function command(room, role, msg) {
       ok = id(msg.castleId) && ['balanced', 'military', 'economy'].includes(msg.specialty) &&
         E.specialize(s, role, msg.castleId, msg.specialty);
       break;
-    case 'train_troop':
-      ok = id(msg.castleId) && typeof msg.troopType === 'string' && Number.isSafeInteger(msg.count) && msg.count > 0 &&
-        E.trainTroops(s, role, msg.castleId, msg.troopType, msg.count);
-      break;
-    case 'quick_recruit': {
-      if (!id(msg.castleId)) break;
-      const count = Number.isSafeInteger(msg.count) ? Math.min(100, Math.max(1, msg.count)) : 100;
-      ok = E.quickRecruit ? E.quickRecruit(s, role, msg.castleId, count) : false;
-      break;
-    }
     case 'recall':
       ok = Number.isSafeInteger(msg.armyId) && E.recall(s, role, msg.armyId);
       break;
     case 'dragon_strike':
       ok = Number.isFinite(msg.x) && Number.isFinite(msg.y) && E.launchDragonStrike(s, role, msg.x, msg.y);
-      break;
-    case 'select_hero':
-      if (E.HEROES && E.HEROES[msg.hero]) {
-        room.slots[role].hero = msg.hero;
-        if (s.players[role]) s.players[role].hero = msg.hero;
-        ok = true;
-      }
       break;
     case 'tactics': {
       if (!id(msg.castleId)) break;

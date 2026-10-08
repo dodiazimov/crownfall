@@ -1,0 +1,228 @@
+/* Royal war room: gilded steel, heraldry and cinematic artwork. */
+.crown-menu {
+  padding: 0 !important;
+  height: 100dvh !important;
+  overflow-y: auto !important;
+  justify-content: flex-start !important;
+  font-family: 'Outfit', sans-serif;
+  color: #e7e7de;
+  animation: none;
+  scrollbar-width: thin;
+  scrollbar-color: #756344 #0a1118;
+}
+.crown-menu .menu-ambiance-backdrop { position: fixed; }
+.crown-menu .scene-bg { background-position: 55% center; filter: saturate(.83) contrast(1.04); transform: none; animation: none; }
+.crown-menu .scene-bg.low { filter: blur(3px); transform: scale(1.015); }
+.crown-menu .scene-bg.low.faded { opacity: 0; }
+.crown-menu .scene-bg.high { transition: opacity 700ms ease; }
+.crown-menu .scene-vignette {
+  background: linear-gradient(90deg, #050a0ff2 0%, #050a0fbd 22%, #050a0f33 42%, transparent 65%),
+    linear-gradient(0deg, #03080de8, transparent 26%, transparent 80%, #03080d3b);
+}
+.royal-atmosphere { position: absolute; inset: 0; z-index: 4; overflow: hidden; pointer-events: none; }
+.royal-atmosphere i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #ffe0a7; box-shadow: 0 0 8px 2px #cf9c5655; opacity: 0; bottom: 15%; left: 53%; animation: royalDust 15s linear infinite; }
+.royal-atmosphere i:nth-child(2) { left: 73%; bottom: 7%; animation-delay: -4s; animation-duration: 20s; }
+.royal-atmosphere i:nth-child(3) { left: 42%; bottom: 20%; animation-delay: -9s; }
+.royal-atmosphere i:nth-child(4) { left: 91%; bottom: 11%; animation-delay: -5s; animation-duration: 18s; }
+.royal-atmosphere i:nth-child(5) { left: 65%; bottom: 26%; animation-delay: -12s; animation-duration: 22s; }
+.royal-atmosphere i:nth-child(6) { left: 36%; bottom: 9%; animation-delay: -2s; animation-duration: 17s; }
+@keyframes royalDust { 0%, 100% { opacity: 0; transform: translate(0,0); } 20%, 65% { opacity: .45; } 95% { opacity: 0; transform: translate(34px,-260px); } }
+.crown-menu .crown-menu-header { position: absolute; inset: 28px 36px auto auto; width: auto; padding: 0; gap: 32px; z-index: 16; }
+.royal-realm-label { display: flex; align-items: center; gap: 10px; padding: 10px 17px; color: #e2d5b7; font: 600 14px var(--royal-serif); letter-spacing: .08em; border-top: 1px solid #bb9b5e80; border-bottom: 1px solid #bb9b5e50; background: linear-gradient(90deg, #0a121ccc, #111b24eb, #0a121c99); }
+.royal-realm-diamond { width: 5px; height: 5px; transform: rotate(45deg); border: 1px solid #d6b879; }
+.crown-menu .crown-account { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.crown-account-button { position: relative; display: flex; align-items: center; gap: 12px; min-width: 238px; max-width: 300px; min-height: 67px; padding: 8px 15px 8px 68px; border: 1px solid #a48d5c; border-radius: 2px 12px 2px 2px; background: linear-gradient(180deg, #20303ad9, #0a131bf2); box-shadow: inset 0 0 0 3px #080f17, 0 3px 14px #0005; color: #eee6d2; text-align: left; cursor: pointer; }
+.royal-portrait { position: absolute; left: -16px; top: 50%; transform: translateY(-50%); width: 75px; height: 75px; padding: 4px; border-radius: 50%; border: 1px solid #e2c589; background: linear-gradient(135deg,#fff0bf,#84622e 40%,#c9a860 68%,#62431f); box-shadow: 0 0 0 3px #0c1319, 0 3px 10px #000a; }
+.royal-portrait img { width: 100%; height: 100%; object-fit: cover; border: 2px solid #101920; border-radius: 50%; }
+.royal-profile-crest { position: absolute; left: 36px; bottom: -5px; display: grid; place-items: center; width: 24px; height: 28px; color: #ddbd79; background: #15222e; border: 1px solid #c6a46a; clip-path: polygon(0 0,100% 0,100% 72%,50% 100%,0 72%); }
+.royal-profile-crest svg { width: 15px; height: 15px; }
+.crown-account-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: 1px; }
+.crown-account-copy strong { font: 600 20px/1.05 var(--royal-serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crown-account-copy > span { color: #cdb887; font: 500 12px var(--royal-serif); }
+.crown-account-copy small { font: 500 10px 'Outfit', sans-serif; color: #a7b0b3; }
+.crown-account-chevron { width: 15px; height: 15px; color: #cdb887; }
+.crown-account-button:hover { border-color: #f0d297; background: linear-gradient(#2a3a42,#0e1820); }
+.crown-menu-content { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; flex: 1 0 auto; gap: 60px; padding: 35px clamp(28px,3.8vw,76px) 28px; }
+.crown-menu-rail { width: clamp(350px,31vw,450px); flex-shrink: 0; max-width: 100%; }
+.crown-menu .crown-brand { position: relative; align-items: center; text-align: center; margin: 0 0 27px; padding: 0; }
+.crown-menu .crown-brand::after { content: none; }
+.royal-crown { width: 130px; height: 73px; margin-bottom: 1px; overflow: visible; filter: drop-shadow(0 2px 4px #000); }
+.crown-brand h1 { margin: 0; font: 700 clamp(48px,4.2vw,67px)/1.15 'Cinzel', serif; letter-spacing: -.045em; color: #e1c189; background: linear-gradient(180deg,#fff5d0 9%,#ead1a0 34%,#a58146 51%,#e5c58b 64%,#af8544 85%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 1px #000) drop-shadow(0 0 18px #9e743615); }
+.royal-brand-rule, .royal-nav-divider { position: relative; width: 85%; height: 1px; margin: 16px auto; background: linear-gradient(90deg,transparent,#9b7a46 20%,#d6b879 50%,#9b7a46 80%,transparent); }
+.royal-brand-rule span, .royal-nav-divider span { position: absolute; top: -3px; left: calc(50% - 3px); width: 7px; height: 7px; transform: rotate(45deg); border: 1px solid #d6b879; background: #17202a; box-shadow: 0 0 0 4px #080d12; }
+.crown-menu-kicker { font: 600 11px var(--royal-serif); color: #d7d5cb; letter-spacing: .23em; text-transform: uppercase; }
+.crown-battle-actions { display: flex; flex-direction: column; gap: 10px; }
+.royal-action {
+  --frame: #70818b;
+  position: relative; width: 100%; min-height: 80px; padding: 1px; border: 0; color: #eae9df; text-align: left; cursor: pointer;
+  background: linear-gradient(135deg,#9da4a2, #394e5a 22%, #7d898e 58%, #364652 80%, #8c999c);
+  clip-path: polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+  isolation: isolate; transition: filter 160ms ease, transform 160ms ease;
+}
+.royal-action::before { content: ''; position: absolute; inset: 1px; z-index: -2; background: #0a141d; clip-path: polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px); }
+.royal-action-art { position: absolute; inset: 2px; z-index: -1; background-image: linear-gradient(90deg,#08121bf7 16%,#08121bd9 46%,#08121b21 100%),url('assets/nav_battle_bg.webp'); background-size: cover; background-position: center,right center; opacity: .78; filter: saturate(.6); transition: opacity 200ms ease; clip-path: polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px); }
+.royal-friends .royal-action-art { background-image: linear-gradient(90deg,#08121bf7 16%,#08121bd9 46%,#08121b21 100%),url('assets/nav_friends_bg.webp'); }
+.royal-training .royal-action-art { background-image: linear-gradient(90deg,#08121bf7 16%,#08121bd9 46%,#08121b21 100%),url('assets/nav_training_bg.webp'); }
+.royal-action-inner { position: relative; display: flex; align-items: center; gap: 18px; min-height: inherit; padding: 14px 20px; box-shadow: inset 0 1px #e5e9dc15,inset 0 -2px #0008; }
+.royal-action-inner::after { content: ''; position: absolute; top: 5px; bottom: 5px; left: 5px; width: 2px; background: linear-gradient(transparent,#9ca1a36b,transparent); }
+.royal-action-icon { display: grid; place-items: center; width: 35px; height: 40px; flex-shrink: 0; color: #cdb88b; filter: drop-shadow(0 2px 2px #000); }
+.royal-action-icon svg { width: 31px; height: 31px; }
+.royal-action-copy { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px; }
+.royal-action-copy strong { font: 700 23px/1.02 var(--royal-serif); letter-spacing: .025em; text-transform: uppercase; text-shadow: 0 2px 3px #000; }
+.royal-action-copy small { font: 500 12px/1.3 'Outfit',sans-serif; color: #acb8be; }
+.royal-action-arrow { width: 19px; height: 19px; color: #adb7b7; filter: drop-shadow(0 1px 2px #000); }
+.crown-start-battle { min-height: 92px; background: linear-gradient(135deg,#fff0bf,#bb8e43 30%,#fff0c0 57%,#a27533 88%,#ead08e); }
+.crown-start-battle::before { background: #241f16; }
+.crown-start-battle .royal-action-art { opacity: 1; filter: saturate(.75); background-image: linear-gradient(90deg,#201e17f5 10%,#282417ce 46%,#322b1940 100%),url('assets/nav_battle_bg.webp'); }
+.crown-start-battle .royal-action-inner { box-shadow: inset 0 0 0 3px #d3b06b30,inset 0 1px #ffe1a0a0; }
+.crown-start-battle .royal-action-icon { color: #efd39b; }
+.crown-start-battle .royal-action-icon svg { width: 36px; height: 36px; }
+.crown-start-battle .royal-action-copy strong { color: #fff0ca; font-size: 27px; }
+.crown-start-battle .royal-action-copy small { color: #d6c399; }
+.crown-start-battle .royal-action-arrow { color: #f0d7a3; }
+.royal-action:hover, .royal-action:focus-visible { filter: brightness(1.2); }
+.royal-action:hover .royal-action-art { opacity: 1; }
+.royal-action:focus-visible .royal-action-inner { box-shadow: inset 0 0 0 3px #f3d49a; }
+.royal-action:disabled { opacity: .5; cursor: wait; }
+.royal-nav-divider { width: 96%; margin: 24px auto 12px; opacity: .75; }
+.crown-utility-nav { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; padding: 0 12px; }
+.crown-utility-nav button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 7px 4px; border: 0; background: none; color: #c6cdc9; font: 600 16px var(--royal-serif); letter-spacing: .04em; text-align: left; cursor: pointer; }
+.crown-utility-nav svg { width: 21px; height: 21px; color: #bea570; }
+.crown-utility-nav button:hover { color: #ffe5ad; }
+.crown-battlefield { position: relative; display: flex; align-items: center; gap: 18px; align-self: flex-end; width: min(390px,32vw); min-height: 103px; margin: 0 0 4px; padding: 10px 17px 10px 10px; border: 1px solid #70818b; border-radius: 2px; background: linear-gradient(125deg,#1c2a32ec,#071018f2); box-shadow: inset 0 0 0 3px #0b141c,0 5px 16px #0008; color: #e3e3d9; text-align: left; cursor: pointer; }
+.crown-battlefield::before, .crown-battlefield::after { content: ''; position: absolute; width: 9px; height: 9px; border-color: #bea877; border-style: solid; }
+.crown-battlefield::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+.crown-battlefield::after { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+.royal-map-art { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 73px; align-self: stretch; border: 1px solid #7b816b70; background: linear-gradient(#16252a70,#09121980),url('assets/card_new_maps.webp') center/cover; }
+.royal-map-art svg { width: 35px; height: 35px; color: #f0d9a5; filter: drop-shadow(0 2px 3px #000); }
+.royal-map-copy { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.crown-battlefield-eyebrow { color: #b6a275; font: 500 9px 'Outfit',sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+.royal-map-copy > strong { font: 600 22px/1.03 var(--royal-serif); }
+.crown-battlefield-meta { display: flex; flex-wrap: wrap; gap: 5px; color: #a3afb4; font: 500 10px/1.4 'Outfit',sans-serif; }
+.royal-map-arrow { width: 17px; height: 17px; color: #c3b48f; }
+.crown-battlefield:hover { border-color: #c6ac77; background: linear-gradient(125deg,#24353eee,#0c1720f5); }
+.crown-menu-footer { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-shrink: 0; margin: 0 clamp(28px,3.8vw,76px); padding: 16px 0 max(20px,env(safe-area-inset-bottom)); border-top: 1px solid #aa8b5230; }
+.royal-footer-brand { color: #9c9b90; font: 500 9px 'Outfit',sans-serif; letter-spacing: .3em; }
+.crown-menu-footnote { color: #a7aaa2; font-size: 10px; letter-spacing: .06em; }
+.crown-menu button:focus-visible, .crown-text-button:focus-visible { outline: 2px solid #e1c99e; outline-offset: 4px; }
+.crown-menu .menu-invite-banner { position: relative; flex-shrink: 0; inset: auto; transform: none; width: calc(100% - 48px); max-width: 680px; margin: 115px auto 0; }
+.crown-menu .menu-invite-banner.hidden { display: none; }
+@media (min-width: 901px) and (max-height: 780px) {
+  .crown-menu-content { padding-top: 24px; padding-bottom: 18px; }
+  .royal-crown { height: 53px; width: 105px; }
+  .crown-brand h1 { font-size: 53px; }
+  .crown-menu .crown-brand { margin-bottom: 22px; }
+  .royal-brand-rule { margin: 12px auto; }
+  .royal-action { min-height: 68px; }
+  .crown-start-battle { min-height: 78px; }
+  .royal-action-inner { padding-top: 10px; padding-bottom: 10px; }
+  .royal-nav-divider { margin-top: 18px; }
+}
+@media (max-width: 1100px) and (min-width: 901px) {
+  .crown-menu .crown-menu-header { gap: 20px; right: 28px; }
+  .royal-realm-label { display: none; }
+  .crown-menu-rail { width: 350px; }
+  .crown-brand h1 { font-size: 51px; }
+  .crown-battlefield { width: 310px; }
+}
+@media (max-width: 900px) {
+  .crown-menu .scene-bg { background-position: 61% center; }
+  .crown-menu .scene-vignette { background: linear-gradient(0deg,#060c13f2 0%,#060c1399 55%,#060c1350 100%),linear-gradient(90deg,#060c1355,#060c1310); }
+  .crown-menu .crown-menu-header { position: relative; inset: auto; width: 100%; padding: max(17px,env(safe-area-inset-top)) 22px 7px; min-height: 81px; justify-content: space-between; gap: 16px; }
+  .royal-realm-label { padding: 8px 0; background: none; border: 0; font-size: 12px; max-width: 110px; }
+  .crown-account-button { min-width: 175px; max-width: 225px; min-height: 53px; padding: 6px 10px 6px 48px; gap: 8px; }
+  .royal-portrait { width: 59px; height: 59px; left: -14px; padding: 3px; }
+  .royal-profile-crest { width: 20px; height: 24px; left: 25px; }
+  .royal-profile-crest svg { width: 12px; height: 12px; }
+  .crown-account-copy strong { font-size: 17px; }
+  .crown-account-copy > span { font-size: 11px; }
+  .crown-account-copy small { font-size: 9px; }
+  .crown-menu-content { flex-direction: column; justify-content: center; gap: 24px; padding: 12px 22px 22px; }
+  .crown-menu-rail { width: 100%; max-width: 430px; }
+  .crown-menu .crown-brand { margin-bottom: 23px; }
+  .royal-crown { width: 102px; height: 54px; }
+  .crown-brand h1 { font-size: clamp(39px,11.3vw,56px); }
+  .royal-brand-rule { margin: 12px auto; }
+  .crown-menu-kicker { font-size: 10px; letter-spacing: .19em; }
+  .royal-action { min-height: 72px; }
+  .crown-start-battle { min-height: 82px; }
+  .royal-action-inner { gap: 13px; padding: 12px 16px; }
+  .royal-action-copy strong { font-size: 22px; }
+  .crown-start-battle .royal-action-copy strong { font-size: 25px; }
+  .royal-action-copy small { font-size: 11px; }
+  .royal-action-icon { width: 29px; }
+  .royal-action-icon svg { width: 28px; height: 28px; }
+  .royal-nav-divider { margin-top: 20px; margin-bottom: 10px; }
+  .crown-utility-nav { column-gap: 16px; padding: 0 9px; }
+  .crown-utility-nav button { font-size: 16px; }
+  .crown-battlefield { width: 100%; max-width: 430px; align-self: center; min-height: 82px; gap: 14px; }
+  .royal-map-art { width: 63px; }
+  .royal-map-copy > strong { font-size: 21px; }
+  .crown-menu-footer { margin: 0 22px; padding-top: 13px; padding-bottom: max(16px,env(safe-area-inset-bottom)); }
+  .royal-footer-brand { font-size: 8px; letter-spacing: .14em; }
+  .crown-menu-footnote { font-size: 9px; letter-spacing: 0; }
+  .crown-menu .menu-invite-banner { margin-top: 15px; }
+}
+@media (max-width: 380px) {
+  .crown-menu .crown-menu-header { padding-left: 18px; padding-right: 18px; }
+  .royal-realm-label { font-size: 11px; max-width: 70px; }
+  .crown-account-button { min-width: 170px; }
+  .crown-menu-content { padding-left: 16px; padding-right: 16px; }
+  .crown-brand h1 { font-size: 38px; }
+  .crown-menu-kicker { font-size: 9px; letter-spacing: .12em; }
+  .royal-action-inner { gap: 10px; padding-left: 12px; padding-right: 12px; }
+  .royal-action-copy strong { font-size: 20px; }
+  .crown-start-battle .royal-action-copy strong { font-size: 23px; }
+  .royal-action-copy small { font-size: 10px; }
+}
+@media (max-width: 900px) and (max-height: 700px) and (orientation: portrait) {
+  .royal-crown { height: 44px; width: 88px; }
+  .crown-brand h1 { font-size: clamp(38px,10.5vw,43px); }
+  .crown-menu .crown-brand { margin-bottom: 18px; }
+  .royal-action { min-height: 65px; }
+  .crown-start-battle { min-height: 73px; }
+  .royal-action-inner { padding-top: 9px; padding-bottom: 9px; }
+  .crown-battle-actions { gap: 8px; }
+}
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .crown-menu .crown-menu-header { min-height: 69px; padding-top: 10px; }
+  .crown-menu-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); align-items: start; gap: 14px 26px; padding-top: 12px; }
+  .crown-menu-rail { display: contents; }
+  .crown-menu .crown-brand { grid-column: 1; grid-row: 1; margin: 0; align-self: center; }
+  .royal-crown { height: 46px; width: 94px; }
+  .crown-brand h1 { font-size: clamp(32px,5.6vw,45px); }
+  .crown-menu-kicker { font-size: 9px; letter-spacing: .1em; }
+  .crown-battle-actions { grid-column: 2; grid-row: 1 / 4; gap: 7px; }
+  .royal-action { min-height: 56px; }
+  .crown-start-battle { min-height: 62px; }
+  .royal-action-inner { padding: 8px 12px; gap: 10px; }
+  .royal-action-copy strong, .crown-start-battle .royal-action-copy strong { font-size: 20px; }
+  .royal-action-copy small { font-size: 9px; }
+  .royal-action-icon { width: 24px; height: 30px; }
+  .royal-action-icon svg, .crown-start-battle .royal-action-icon svg { width: 25px; height: 25px; }
+  .royal-action-arrow { width: 13px; height: 13px; }
+  .royal-nav-divider { display: none; }
+  .crown-utility-nav { grid-column: 1; grid-row: 2; gap: 0 12px; padding: 0; }
+  .crown-utility-nav button { gap: 8px; font-size: 14px; }
+  .crown-utility-nav svg { width: 17px; height: 17px; }
+  .crown-battlefield { grid-column: 1; grid-row: 3; min-height: 70px; padding: 8px; gap: 10px; }
+  .royal-map-art { width: 40px; }
+  .royal-map-art svg { width: 26px; height: 26px; }
+  .royal-map-copy > strong { font-size: 18px; }
+  .crown-battlefield-meta { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crown-menu *, .crown-menu *::before, .crown-menu *::after { animation: none !important; transition: none !important; }
+}
+
+.crown-profile-editor { padding: 0 0 20px; margin-bottom: 18px; border-bottom: 1px solid #c5bba530; }
+.crown-profile-editor label { display: block; color: #c9c4b6; font-size: 12px; margin-bottom: 8px; }
+.crown-profile-input-row { display: flex; gap: 8px; }
+.crown-profile-input-row input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #c5bba540; border-radius: 3px; background: #080f17; color: #eee8dc; padding: 10px 12px; font: 500 14px 'Outfit', sans-serif; }
+.crown-profile-input-row button { flex-shrink: 0; min-height: 44px; }
+.crown-profile-auth { margin-top: 8px; }
+.crown-text-button { min-height: 44px; padding: 8px 0; border: 0; background: none; color: #c3a574; cursor: pointer; font: 500 13px 'Outfit', sans-serif; }
+.crown-text-button.hidden { display: none; }
+.crown-help-links { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 20px; }
+.crown-help-links > * { display: inline-flex; align-items: center; min-height: 44px; }
+.crown-help-links a { color: #b3b5ae; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }

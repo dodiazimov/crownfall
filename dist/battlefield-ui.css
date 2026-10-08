@@ -13,6 +13,9 @@ body.in-game #map .ownership-marker { fill:var(--faction); }
 body.in-game #map .castle-caption .castle-name { fill:#e4dfd1; font-size:16px !important; letter-spacing:0 !important; }
 body.in-game #map .castle-caption .castle-role { fill:#a6b0b2; font-size:11px !important; opacity:1 !important; }
 body.in-game #map .castle-sprite-img { filter:drop-shadow(8px 12px 10px rgba(1, 4, 8, 0.70)) contrast(1.04) brightness(.88) saturate(.92) !important; }
+body.in-game[data-quality="low"] #map .castle-sprite-img { filter:none !important; }
+body.in-game[data-quality="low"] #map :is(.clash-smoke,.clash-flash,.castle-stars) { animation:none !important; filter:none !important; }
+body.in-game[data-quality="low"] #map .castle-stars polygon { filter:none !important; }
 body.in-game #map .source-halo,body.in-game #map .target-halo { display:block !important; opacity:0; fill:none !important; stroke-width:1.4px !important; vector-effect:non-scaling-stroke; }
 body.in-game #map .castle.source-selected .source-halo { opacity:.90; stroke:#8ec0e4 !important; stroke-dasharray:5 3; }
 body.in-game #map .castle.target-selected .target-halo { opacity:1; stroke:#cb9290 !important; stroke-dasharray:5 3; }

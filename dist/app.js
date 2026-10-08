@@ -181,6 +181,10 @@ function syncSetupUI() {
   $('commanderTitle').textContent = changingDifficulty ? tr('settings_ai_diff') : tr('hero_pick_title');
   $('commanderSubtitle').textContent = changingDifficulty ? tr('diff_subtitle') : tr('ui_pick_hint');
   const map = $('startMapSelect');
+  const menuMapIndex = map.value === 'random' ? null : Number(map.value);
+  if ($('menuMapName')) $('menuMapName').textContent = menuMapIndex === null
+    ? tr('menu_random_map') : E.MAP_NAMES[menuMapIndex].replace(/ \(.*$/, '');
+  if ($('menuMapMeta')) $('menuMapMeta').textContent = `${menuMapIndex === null ? selectedPlayerCount : E.MAP_PLAYERS[menuMapIndex]} ${tr('ui_players')}`;
   [...map.options].forEach(option => { option.disabled = option.value !== 'random' && E.MAP_PLAYERS[Number(option.value)] !== selectedPlayerCount; });
   $('setupSummary').textContent = `${selectedPlayerCount} ${tr('ui_players')} · ${DIFF_LABELS[$('aiDifficulty').value] || DIFF_LABELS.normal} · ${map.selectedOptions[0]?.textContent || ''}`;
   document.querySelectorAll('#spPlayerCountToggle button,#spVictoryModeToggle button').forEach(b => b.setAttribute('aria-pressed',String(b.classList.contains('active'))));
@@ -202,29 +206,14 @@ function selectHero(hero, online=false) {
   CrownSound.play('hero_pick');
   if(online && multiplayerMode) sendWs({type:'select_hero',hero});
 }
-function routeSpeedFor(source, route=marchRoute) {
-  let speed=source?.type==='knight' && source.owner===myRole ? (route==='flank'?81:106) : (route==='flank'?65:85);
-  const hero=state.players[myRole]?.hero;
-  if(hero==='vanguard')speed*=E.HEROES.vanguard.speedMod;
-  if(hero==='infiltrator'&&route==='flank')speed*=E.HEROES.infiltrator.flankSpeedMod;
-  if(state.weather?.type==='rain')speed*=E.WEATHER_TYPES.rain.speedMod;
-  if(state.weather?.type==='fog'&&route==='flank')speed*=E.WEATHER_TYPES.fog.flankSpeedMod;
-  return Math.round(speed*100)/100;
+function routeSpeedFor(source, route=marchRoute, count=Math.floor(getAvailable(source)*dispatchPercent/100)) {
+  return E.marchSpeed(source,route,state.weather,state.players[myRole]?.hero);
 }
-// Preview the existing siege rules without mutating the match.
 function siegeEstimate(count,target,defenders) {
-  let survivors=count;
-  if(target.type==='archer'&&target.owner&&target.owner!==myRole){
-    let volley=Math.min(Math.floor(count*.15*target.level)+2,Math.max(0,count-1));
-    if(state.weather?.type==='snow')volley=Math.floor(volley*.7);
-    survivors-=volley;
-  }
-  const flank=state.players[myRole]?.hero==='infiltrator'&&marchRoute==='flank';
-  const strength=flank?Math.floor(survivors*1.2):survivors;
-  return {wins:strength>defenders,survivors:strength>defenders?(strength>survivors?Math.max(1,survivors-Math.ceil(defenders/1.2)):survivors-defenders):0};
+  return E.siegeOutcome(state,{owner:myRole,source:sourceId,count,route:marchRoute},{...target,troops:defenders});
 }
 function requiredForSiege(target,defenders) {
-  let low=1, high=Math.ceil(defenders*3+16);
+  let low=1,high=Math.ceil(defenders*3+16);
   while(low<high){const mid=Math.floor((low+high)/2);if(siegeEstimate(mid,target,defenders).wins)high=mid;else low=mid+1;}
   return low;
 }
@@ -544,44 +533,6 @@ function executeUpgrade(castleId = sourceId) {
   return true;
 }
 
-function executeQuickRecruit(count = 100) {
-  if (state.paused || state.result) return false;
-  ensureValidSource();
-  const c = state.castles[sourceId];
-  if (!c || c.owner !== myRole) {
-    toast(tr('audit_no_source') || "Avval o'z qal'angizni tanlang!");
-    return false;
-  }
-  const cost = count;
-  const p = state.players[myRole] || { gold: 0 };
-  if ((p.gold || 0) < cost) {
-    const diff = Math.ceil(cost - (p.gold || 0));
-    toast(`⚠️ ${tr('audit_need_gold') || 'Oltin yetarli emas!'} (${diff} 🪙)`);
-    return false;
-  }
-
-  if (multiplayerMode) {
-    if (wsClient && wsClient.readyState === 1) {
-      sendWs({ type: 'quick_recruit', castleId: sourceId, count });
-    }
-    return true;
-  }
-
-  if (!E.quickRecruit(state, myRole, sourceId, count)) {
-    toast(`⚠️ ${tr('audit_need_gold') || 'Oltin yetarli emas!'}`);
-    return false;
-  }
-
-  if (typeof CrownSound !== 'undefined' && CrownSound.play) {
-    CrownSound.play('capture');
-  }
-  toast(`⚡ +${count} askar safga qo'shildi! (${c.name})`);
-  saveMatch();
-  updateUI();
-  V.render(state, targetId, sourceId, marchRoute);
-  return true;
-}
-
 function applySnapshot(msg, initialize = false) {
   if (msg.roomCode !== currentRoomCode || !Number.isInteger(msg.revision) || msg.revision <= lastNetworkRevision) return false;
   const incoming = E.deserialize(msg.state);
@@ -608,116 +559,6 @@ function applySnapshot(msg, initialize = false) {
 }
 
 // ====================================================
-// TROOP RECRUITMENT & TRAINING SYSTEM
-// ====================================================
-let selectedTrainType = 'soldier';
-let trainCount = 5;
-
-function openTrainingDialog(initialType = 'soldier') {
-  if (state.paused || !!state.result) return;
-  ensureValidSource();
-  let c = state.castles[sourceId];
-  if (!c || c.owner !== myRole) {
-    const first = E.owned(state, myRole)[0];
-    if (first) { sourceId = first.id; c = first; }
-    else { toast(tr('audit_no_source')); return; }
-  }
-  selectedTrainType = initialType;
-  trainCount = 5;
-  syncTrainingDialog();
-  if ($('trainingDialog')) $('trainingDialog').showModal();
-}
-
-function syncTrainingDialog() {
-  const c = state.castles[sourceId];
-  if (!c || c.owner !== myRole) return;
-  const p = state.players[myRole] || { gold: 0 };
-
-  if ($('trainCastleName')) $('trainCastleName').textContent = c.name;
-  if ($('trainCastleType')) {
-    $('trainCastleType').textContent = `${E.TYPES[c.type].name} · L${c.level} · ${c.specialty.toUpperCase()}`;
-  }
-  if ($('trainCastleGold')) $('trainCastleGold').textContent = `${fmt(p.gold)} 🪙`;
-
-  // Troop Grid Selection
-  document.querySelectorAll('#trainTroopGrid .train-type-btn').forEach(btn => {
-    const t = btn.dataset.type;
-    const isSel = t === selectedTrainType;
-    const isUnl = E.unlocked(state, myRole, t);
-    btn.classList.toggle('active', isSel);
-    btn.classList.toggle('locked', !isUnl);
-    btn.disabled = !isUnl;
-  });
-
-  const unit = E.UNITS[selectedTrainType] || E.UNITS.soldier;
-  const isUnl = E.unlocked(state, myRole, selectedTrainType);
-
-  if ($('trainUnitName')) $('trainUnitName').textContent = unit.name;
-  if ($('trainUnlockBadge')) {
-    $('trainUnlockBadge').textContent = isUnl ? '✓ Unlocked' : '🔒 Locked';
-    $('trainUnlockBadge').style.color = isUnl ? '#2ecc71' : '#e74c3c';
-  }
-  if ($('trainUnitDesc')) $('trainUnitDesc').textContent = unit.desc;
-  if ($('statHp')) $('statHp').textContent = unit.hp;
-  if ($('statDmg')) $('statDmg').textContent = `${unit.damage} (Crit ${(unit.critChance*100).toFixed(0)}%)`;
-  if ($('statSpd')) $('statSpd').textContent = `${unit.speedMod}x`;
-  if ($('statArm')) $('statArm').textContent = unit.armor > 0 ? `${(unit.armor*100).toFixed(0)}%` : '0';
-
-  const totalCost = unit.cost * trainCount;
-  const totalTime = Math.max(1, unit.time * (1 + (trainCount - 1) * 0.35));
-
-  if ($('trainQuantityCount')) $('trainQuantityCount').textContent = trainCount;
-  if ($('trainCostTotal')) $('trainCostTotal').textContent = `${totalCost} 🪙`;
-  if ($('trainTimeTotal')) $('trainTimeTotal').textContent = `${totalTime.toFixed(1)}s`;
-
-  const canProduce = (selectedTrainType === 'soldier' && ['main','troop','small','elite'].includes(c.type)) ||
-                     (selectedTrainType === 'archer' && ['archer','elite'].includes(c.type)) ||
-                     (selectedTrainType === 'knight' && ['knight','elite'].includes(c.type)) ||
-                     (selectedTrainType === 'cavalry' && (['cavalry','elite'].includes(c.type) || (c.type === 'knight' && c.level >= 2)));
-
-  const hasGold = p.gold >= totalCost;
-  const q = c.trainingQueue || [];
-  const queueOk = q.length < 5;
-
-  let feedback = '';
-  if (!canProduce) {
-    feedback = `⚠️ ${c.name} (${E.TYPES[c.type].name}) cannot train ${unit.name}! Use matching castle.`;
-  } else if (!hasGold) {
-    feedback = `⚠️ ${tr('audit_need_gold')} ${Math.ceil(totalCost - p.gold)} 🪙`;
-  } else if (!queueOk) {
-    feedback = `⚠️ ${tr('ui_queue_label')} is full (max 5 batches)`;
-  }
-  if ($('trainFeedback')) $('trainFeedback').textContent = feedback;
-
-  const trainBtn = $('trainActionBtn');
-  if (trainBtn) {
-    trainBtn.disabled = !canProduce || !hasGold || !queueOk || state.paused || !!state.result || (multiplayerMode && wsClient?.readyState !== 1);
-    if ($('trainBtnCost')) $('trainBtnCost').textContent = `${totalCost} 🪙`;
-  }
-
-  // Render Queue Container
-  if ($('trainQueueCount')) $('trainQueueCount').textContent = `${q.length} / 5 active`;
-  const qContainer = $('trainQueueContainer');
-  if (qContainer) {
-    if (q.length === 0) {
-      qContainer.innerHTML = `<span style="font-size:11px;color:var(--text-muted);display:block;text-align:center;padding:4px;">Navbat bo'sh</span>`;
-    } else {
-      qContainer.innerHTML = q.map((item, idx) => {
-        const u = E.UNITS[item.type] || { name: item.type };
-        const pct = Math.max(0, Math.min(100, Math.round(((item.totalTime - item.timeRemaining) / Math.max(0.1, item.totalTime)) * 100)));
-        return `<div class="queue-item-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px;margin-bottom:3px;background:rgba(255,255,255,0.05);border-radius:4px;">
-          <span style="font-size:11px;color:#fff;"><b>${item.count}</b> ${u.name}</span>
-          <div style="flex:1;max-width:110px;height:6px;background:rgba(0,0,0,0.5);border-radius:3px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:var(--gold);border-radius:3px;"></div>
-          </div>
-          <small style="font-size:10px;color:var(--gold);min-width:32px;text-align:right;">${item.timeRemaining.toFixed(1)}s</small>
-        </div>`;
-      }).join('');
-    }
-  }
-}
-
-// ====================================================
 // ARMY INSPECTION & RECALL SYSTEM
 // ====================================================
 let inspectedArmyId = null;
@@ -726,6 +567,8 @@ let selectedBattleId = null;
 let castleMgmtOpen = false;
 
 function openCastleManagement() {
+  ensureValidSource();
+  if (!matchActive || !state.castles[sourceId] || state.castles[sourceId].owner !== myRole) return;
   castleMgmtOpen = true;
   const panel = $('castleManagementPanel');
   if (panel) panel.classList.remove('hidden');
@@ -812,11 +655,6 @@ function openArmyRecallDialog(army) {
   if ($('armyRecallEta')) $('armyRecallEta').textContent = `${eta.toFixed(1)}s`;
   if ($('armyInBattleBadge')) $('armyInBattleBadge').classList.toggle('hidden', !army.inBattle);
 
-  const u = army.units || { soldier: army.count, archer: 0, knight: 0, cavalry: 0 };
-  if ($('recallCountSoldier')) $('recallCountSoldier').textContent = u.soldier || 0;
-  if ($('recallCountArcher')) $('recallCountArcher').textContent = u.archer || 0;
-  if ($('recallCountKnight')) $('recallCountKnight').textContent = u.knight || 0;
-  if ($('recallCountCavalry')) $('recallCountCavalry').textContent = u.cavalry || 0;
 
   const btn = $('armyRecallActionBtn');
   if (btn) {
@@ -838,7 +676,7 @@ function openArmyRecallDialog(army) {
 // DRAGON STRIKE TARGETING SYSTEM
 // ====================================================
 let dragonTargeting = false;
-let dragonTargetPos = { x: 550, y: 380 };
+let dragonTargetPos = { x: 1100, y: 750 };
 let lastMapPointerType = 'mouse';
 
 function renderDragonReticle(x, y) {
@@ -850,14 +688,14 @@ function renderDragonReticle(x, y) {
   }
   ret.innerHTML = `
     <g transform="translate(${x} ${y})">
-      <circle r="95" fill="rgba(255, 71, 87, 0.15)" stroke="#ff4757" stroke-width="2.5" stroke-dasharray="8 5"/>
-      <circle r="65" fill="rgba(255, 107, 107, 0.2)" stroke="#ff6b6b" stroke-width="1.8" stroke-dasharray="5 4"/>
-      <circle r="35" fill="rgba(255, 118, 117, 0.25)" stroke="#ffd32a" stroke-width="2"/>
-      <line x1="-110" y1="0" x2="110" y2="0" stroke="#ff4757" stroke-width="1.5" stroke-dasharray="4 3"/>
-      <line x1="0" y1="-110" x2="0" y2="110" stroke="#ff4757" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <circle r="190" fill="rgba(255, 71, 87, 0.15)" stroke="#ff4757" stroke-width="2.5" stroke-dasharray="8 5"/>
+      <circle r="130" fill="rgba(255, 107, 107, 0.2)" stroke="#ff6b6b" stroke-width="1.8" stroke-dasharray="5 4"/>
+      <circle r="70" fill="rgba(255, 118, 117, 0.25)" stroke="#ffd32a" stroke-width="2"/>
+      <line x1="-210" y1="0" x2="210" y2="0" stroke="#ff4757" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <line x1="0" y1="-210" x2="0" y2="210" stroke="#ff4757" stroke-width="1.5" stroke-dasharray="4 3"/>
       <circle r="5" fill="#ffd32a"/>
-      <rect x="-45" y="-120" width="90" height="22" rx="11" fill="rgba(6,20,34,0.9)" stroke="#ff4757" stroke-width="1.5"/>
-      <text y="-105" text-anchor="middle" fill="#ffd32a" font-size="11" font-weight="900" font-family="'Outfit', sans-serif">🐉 TARGET</text>
+      <rect x="-45" y="-230" width="90" height="22" rx="11" fill="rgba(6,20,34,0.9)" stroke="#ff4757" stroke-width="1.5"/>
+      <text y="-215" text-anchor="middle" fill="#ffd32a" font-size="11" font-weight="900" font-family="'Outfit', sans-serif">🐉 TARGET</text>
     </g>
   `;
 }
@@ -871,24 +709,15 @@ function cancelDragonStrike() {
 }
 
 function executeDragonStrike(x, y) {
-  if (!dragonTargeting) return;
-  const strikeX = (typeof x === 'number' && Number.isFinite(x)) ? x : dragonTargetPos.x;
-  const strikeY = (typeof y === 'number' && Number.isFinite(y)) ? y : dragonTargetPos.y;
-  if (multiplayerMode) {
-    sendWs({ type: 'dragon_strike', x: strikeX, y: strikeY });
-  } else {
-    const ok = E.launchDragonStrike(state, myRole, strikeX, strikeY);
-    if (ok) {
-      toast("🐉 Ajdaho jangga yo'l oldi! 3s ichida zarba beriladi!");
-      saveMatch();
-    }
-  }
-  cancelDragonStrike();
-  updateUI();
-  V.render(state, targetId, sourceId);
+  if (!dragonTargeting || !E.canDragonStrike(state,myRole)) return false;
+  const point=E.clampMapPoint({x:Number.isFinite(x)?x:dragonTargetPos.x,y:Number.isFinite(y)?y:dragonTargetPos.y});
+  const ok=multiplayerMode?sendWs({type:'dragon_strike',...point}):E.launchDragonStrike(state,myRole,point.x,point.y);
+  if(!ok)return false;
+  if(!multiplayerMode){toast("🐉 Ajdaho jangga yo'l oldi! 3s ichida zarba beriladi!");saveMatch();}
+  cancelDragonStrike();updateUI();V.render(state,targetId,sourceId);
+  return true;
 }
 
-// Update the bottom command deck and active castle info
 function updateDock() {
   syncTacticsBtnPlacement();
   ensureValidSource();
@@ -943,15 +772,7 @@ function updateDock() {
     if ($('stripArmyEta')) $('stripArmyEta').textContent = `ETA: ${eta.toFixed(1)}s`;
     if ($('stripArmyRoute')) $('stripArmyRoute').textContent = rtLabel;
 
-    const u = movingArmy.units || { soldier: movingArmy.count, archer: 0, knight: 0, cavalry: 0 };
-    if ($('stripArmyChips')) {
-      $('stripArmyChips').innerHTML = `
-        <span class="army-chip-pill"><span class="chip-icon">⚔</span> ${u.soldier || 0}</span>
-        ${(u.archer || 0) > 0 ? `<span class="army-chip-pill"><span class="chip-icon">🏹</span> ${u.archer}</span>` : ''}
-        ${(u.knight || 0) > 0 ? `<span class="army-chip-pill"><span class="chip-icon">🛡</span> ${u.knight}</span>` : ''}
-        ${(u.cavalry || 0) > 0 ? `<span class="army-chip-pill"><span class="chip-icon">🐎</span> ${u.cavalry}</span>` : ''}
-      `;
-    }
+    if ($('stripArmyChips')) $('stripArmyChips').innerHTML = `<span class="army-chip-pill">⚔ ${fmt(movingArmy.count)}</span>`;
 
     const recallBtn = $('stripRecallBtn');
     if (recallBtn) {
@@ -1025,18 +846,11 @@ function updateDock() {
 
     if ($('mgmtCastleTitle')) $('mgmtCastleTitle').textContent = source.name;
     if ($('mgmtCastleMeta')) $('mgmtCastleMeta').textContent = `Level ${source.level} · ${source.specialty || 'balanced'}`;
+    if ($('mgmtBuffDescription')) $('mgmtBuffDescription').textContent = sourceStrat?.buffDesc || '';
+    if ($('mgmtBuffScope')) $('mgmtBuffScope').textContent = sourceStrat?.scope || '';
 
     if ($('activePassiveDesc')) {
-      let desc = '';
-      if (source.type === 'archer') {
-        desc = window.CrownI18n ? window.CrownI18n.t('passive_archer') : "O'qchilar yomg'iri: himoyada dushmanga 15%/lvl zarba";
-      } else if (source.type === 'knight') {
-        desc = window.CrownI18n ? window.CrownI18n.t('passive_knight') : "Tezkor yurish: bu yerdan chiquvchi qo'shinlar +25% tez";
-      } else if (source.type === 'small') {
-        desc = window.CrownI18n ? window.CrownI18n.t('passive_watch') : "Kuzatuv minorasi: kengroq ko'rish va xavf signali";
-      } else if (source.type === 'elite') {
-        desc = window.CrownI18n ? window.CrownI18n.t('passive_citadel') : "Buyuk Sitadel: +1 askar/s aura va Crown Control o'zagi";
-      }
+      let desc = sourceStrat?.buffDesc || '';
       if (source.stabilizing && source.stabilizing > 0) {
         const stabMsg = window.CrownI18n ? window.CrownI18n.t('stabilizing_badge') : "Barqarorlashuv";
         desc = `⏳ ${stabMsg} (${Math.ceil(source.stabilizing)}s, 50% ishlab chiqarish) · ${desc}`;
@@ -1137,28 +951,7 @@ function updateDock() {
       rewIncome.textContent = incText;
 
       const eraName = (E.getCastleRoleName && E.getCastleRoleName(state.epoch, target.type)) || E.TYPES[target.type]?.name || target.type;
-      let unlockLabel = '';
-      if (target.type === 'archer') {
-        const uInfo = E.getTroopRoleInfo ? E.getTroopRoleInfo(state.epoch, 'archer') : null;
-        const uName = uInfo?.name || 'Archer';
-        unlockLabel = `🏹 ${eraName} · Unlock ${uName} + Passive ${uName} Production`;
-      } else if (target.type === 'knight') {
-        const uInfo = E.getTroopRoleInfo ? E.getTroopRoleInfo(state.epoch, 'knight') : null;
-        const uName = uInfo?.name || 'Knight';
-        unlockLabel = `🛡️ ${eraName} · Unlock ${uName} + Swift March (+25% Speed)`;
-      } else if (target.type === 'cavalry') {
-        const uInfo = E.getTroopRoleInfo ? E.getTroopRoleInfo(state.epoch, 'cavalry') : null;
-        const uName = uInfo?.name || 'Cavalry';
-        unlockLabel = `🐎 ${eraName} · Unlock ${uName} + Passive ${uName} Production`;
-      } else if (target.type === 'gold') {
-        unlockLabel = `🪙 ${eraName} · High Gold (+4-11 🪙/s)`;
-      } else if (target.type === 'troop') {
-        unlockLabel = `⚔️ ${eraName} · Barracks (+3-5 ⚔/s)`;
-      } else if (target.type === 'elite') {
-        unlockLabel = `👑 ${eraName} · Imperial Aura (+1/s) & Victory Core`;
-      } else {
-        unlockLabel = `🏰 ${eraName} · Strategic Keep`;
-      }
+      const unlockLabel = `${eraName} · ${E.getCastleStrategicInfo(target,state.epoch,state).buffDesc}`;
 
       if (isFriendly) {
         rewCard.setAttribute('data-mode', 'active');
@@ -1180,13 +973,17 @@ function updateDock() {
 
     const sources = allCastles ? owned.filter(c => c.id !== target.id && Math.floor(getAvailable(c) * dispatchPercent / 100) > 0) : source && source.owner === myRole ? [source] : [];
     const eta = sources.length ? Math.max(...sources.map(c => E.routeLength(E.routeBetween(c, target, marchRoute, state.mapIndex)) / routeSpeedFor(c))) : 0;
-    const projected = target.troops + (target.owner ? Math.floor(target.carry + E.incomeFor(target, target.level, target.specialty, state.players[target.owner]?.hero).troops * eta) : 0);
-    const estimate = siegeEstimate(count, target, projected);
+    const projected = E.forecastCastle(state,target.id,eta,myRole);
+    const estimate = siegeEstimate(count, projected, projected.troops);
+    if (allCastles) {
+      const strength = sources.reduce((n,c)=>n+E.siegeOutcome(state,{owner:myRole,source:c.id,count:Math.floor(getAvailable(c)*dispatchPercent/100),route:marchRoute},projected).strength,0);
+      estimate.wins = strength > E.defense(state,projected);
+    }
     const risk = !isFriendly && !estimate.wins;
     $('targetSummary').dataset.risk = risk ? 'high' : 'normal';
     $('battleForecast').textContent = isFriendly ? `${tr('audit_reinforce')} +${fmt(count)} · ${eta.toFixed(1)}s` : allCastles
       ? `${tr('ui_orders')}: ${fmt(count)} ${tr('ui_troops')} · ~${eta.toFixed(1)}s`
-      : `${tr('audit_required')}: ~${fmt(requiredForSiege(target, projected))} · ${risk ? tr('audit_risk') : tr('audit_advantage')} · ${tr('audit_survivors')}: ~${fmt(estimate.survivors)}`;
+      : `${tr('audit_required')}: ~${fmt(requiredForSiege(projected, projected.troops))} · ${risk ? tr('audit_risk') : tr('audit_advantage')} · ${tr('audit_survivors')}: ~${fmt(estimate.survivors)}`;
     $('forecastNote').textContent = tr(allCastles ? 'ui_group_forecast' : 'audit_forecast_note');
     $('dispatchReason').textContent = multiplayerMode && wsClient?.readyState !== 1 ? tr('audit_disconnected') : state.paused ? tr('audit_paused') : count < 1 ? tr('audit_no_troops') : risk ? tr('audit_risk_allowed') : '';
     if (dispatchBtn) {
@@ -1212,40 +1009,6 @@ function updateDock() {
   }
 
   window.CrownEpochVisuals?.syncUI(state.epoch || '18th');
-  // 3. Troop Recruitment Bar (Compact in Command Strip)
-  const troopTotals = E.totals(state, myRole);
-  const comp = troopTotals.composition || { soldier: 0, archer: 0, knight: 0, cavalry: 0 };
-  if ($('countSoldier')) $('countSoldier').textContent = fmt(comp.soldier);
-  if ($('countArcher')) $('countArcher').textContent = fmt(comp.archer);
-  if ($('countKnight')) $('countKnight').textContent = fmt(comp.knight);
-  if ($('countCavalry')) $('countCavalry').textContent = fmt(comp.cavalry);
-
-  const hasArcher = E.unlocked(state, myRole, 'archer');
-  const hasKnight = E.unlocked(state, myRole, 'knight');
-  const hasCavalry = E.unlocked(state, myRole, 'cavalry');
-
-  if ($('troopArcherBtn')) $('troopArcherBtn').classList.toggle('locked', !hasArcher);
-  if ($('troopKnightBtn')) $('troopKnightBtn').classList.toggle('locked', !hasKnight);
-  if ($('troopCavalryBtn')) $('troopCavalryBtn').classList.toggle('locked', !hasCavalry);
-
-  // Quick Recruit 100 Button state
-  const quickRecruitBtn = $('quickRecruit100Btn');
-  if (quickRecruitBtn) {
-    const pGold = state.players[myRole]?.gold || 0;
-    const canAfford = pGold >= 100;
-    const hasOwnedSource = source && source.owner === myRole;
-    const canRecruit = canAfford && hasOwnedSource && !state.paused && !state.result && (!multiplayerMode || wsClient?.readyState === 1);
-    quickRecruitBtn.disabled = !canRecruit;
-    quickRecruitBtn.classList.toggle('disabled', !canAfford);
-    if (!hasOwnedSource) {
-      quickRecruitBtn.title = `${tr('ui_quick_100')} (100 ${tr('gold')}) · ${tr('audit_no_source')}`;
-    } else if (!canAfford) {
-      quickRecruitBtn.title = `${tr('ui_quick_100')} (100 ${tr('gold')}) · ${tr('audit_need_gold')} ${Math.ceil(100 - pGold)} 🪙`;
-    } else {
-      quickRecruitBtn.title = `${tr('ui_quick_100')} (100 ${tr('gold')}) · R`;
-    }
-  }
-
   // 4. Special Ability Rail (Dragon Strike & Hero Ability)
   const canDragon = E.canDragonStrike(state, myRole);
   const cd = (state.dragonCooldowns && state.dragonCooldowns[myRole]) || 0;
@@ -1322,10 +1085,10 @@ function updateUnitBattles() {
   const battles = (state.battles || []).map(b => {
     const sides = new Map();
     for (const army of state.armies.filter(a => b.armies.includes(a.id) && a.count > 0)) {
-      if (!sides.has(army.owner)) sides.set(army.owner, {units:{}, origins:new Set()});
+      if (!sides.has(army.owner)) sides.set(army.owner, {count:0, origins:new Set()});
       const side = sides.get(army.owner);
       side.origins.add(state.castles[army.source]?.name || army.owner);
-      for (const [type, count] of CrownView.unitEntries(army)) side.units[type] = (side.units[type] || 0) + count;
+      side.count += army.count;
     }
     return [...sides].map(([owner, side]) => `<div class="battle-side" data-owner="${esc(owner)}"><b>${esc([...side.origins].join(', '))}</b><span>${esc(CrownView.composition(side, true))}</span></div>`).join('<div class="battle-versus">⚔</div>');
   }).filter(Boolean);
@@ -1664,17 +1427,17 @@ function updateUI() {
     }
     if (window.CrownCareer) {
       const st = state.stats[myRole] || {};
-      const totalLosses = (st.roadLosses || 0) + (st.attackLosses || 0) + (st.defenseLosses || 0);
-      const allCastlesCaptured = E.owned(state, state.result).length === totalCastles;
+      const allCastlesCaptured = isWin && E.owned(state, myRole).length === totalCastles;
       const myCastle = state.castles.find(c => c.owner === myRole);
       const hasReserve = myCastle ? (myCastle.reserve > 0) : false;
-      const myGold = (state.players && state.players[myRole]) ? (state.players[myRole].gold || 0) : 0;
       window.CrownCareer.recordMatch({
+        matchId: `${state.matchId}:${myRole}`,
+        outcome: state.result === 'draw' ? 'draw' : isWin ? 'win' : 'loss',
         isWin,
         captures: st.captures || 0,
         dispatched: st.dispatched || 0,
-        casualties: totalLosses,
-        goldEarned: myGold,
+        casualtiesInflicted: st.casualtiesInflicted || 0,
+        goldEarned: st.goldEarned || 0,
         duration: state.time,
         allCastles: allCastlesCaptured,
         ironBastion: isWin && hasReserve,
@@ -1688,18 +1451,12 @@ function updateUI() {
     saveMatch();
   }
 
-  if ($('trainingDialog')?.open) syncTrainingDialog();
   if ($('armyRecallDialog')?.open && inspectedArmyId !== null) {
     const inspArmy = state.armies.find(a => a.id === inspectedArmyId);
     if (inspArmy) {
       const eta = Math.max(0, inspArmy.duration - inspArmy.t);
       if ($('armyRecallEta')) $('armyRecallEta').textContent = `${eta.toFixed(1)}s`;
       if ($('armyRecallTotal')) $('armyRecallTotal').textContent = inspArmy.count;
-      for (const type of ['soldier','archer','knight','cavalry']) {
-        const el = $('recallCount'+type[0].toUpperCase()+type.slice(1));
-        if (el) el.textContent = inspArmy.units?.[type] ?? (type === 'soldier' ? inspArmy.count : 0);
-      }
-      if ($('armyInBattleBadge')) $('armyInBattleBadge').classList.toggle('hidden', !inspArmy.inBattle);
       const btn = $('armyRecallActionBtn');
       if (btn) {
         if (inspArmy.inBattle) {
@@ -2357,7 +2114,7 @@ function setupEvents() {
       close.onclick = () => closeModalSafe(dialog);
     }
     dialog.addEventListener('close',()=>dialog.querySelector('.modal-feedback')?.remove());
-    if(['helpDialog','hotkeysDialog','menuDialog','authDialog','careerDialog','lobbyBrowserDialog','difficultyDialog','tacticsDialog','trainingDialog','armyRecallDialog'].includes(dialog.id)){
+    if(['helpDialog','hotkeysDialog','menuDialog','authDialog','careerDialog','lobbyBrowserDialog','difficultyDialog','tacticsDialog','armyRecallDialog'].includes(dialog.id)){
       let outside=false;
       const isOutside=e=>{const r=dialog.getBoundingClientRect();return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;};
       dialog.addEventListener('pointerdown',e=>{outside=e.target===dialog&&isOutside(e);});
@@ -2380,10 +2137,7 @@ function setupEvents() {
 
     if (dragonTargeting) {
       const coords = svgCoords(e);
-      dragonTargetPos = {
-        x: Math.max(50, Math.min(1050, Math.round(coords.x))),
-        y: Math.max(60, Math.min(710, Math.round(coords.y)))
-      };
+      dragonTargetPos = E.clampMapPoint({x:Math.round(coords.x),y:Math.round(coords.y)});
       const isTouch = e.pointerType === 'touch' || (e.pointerType === undefined && lastMapPointerType === 'touch');
       if (isTouch) {
         renderDragonReticle(dragonTargetPos.x, dragonTargetPos.y);
@@ -2510,10 +2264,7 @@ function setupEvents() {
     lastMapPointerType = e.pointerType || 'mouse';
     if (dragonTargeting) {
       const coords = svgCoords(e);
-      dragonTargetPos = {
-        x: Math.max(50, Math.min(1050, Math.round(coords.x))),
-        y: Math.max(60, Math.min(710, Math.round(coords.y)))
-      };
+      dragonTargetPos = E.clampMapPoint({x:Math.round(coords.x),y:Math.round(coords.y)});
       renderDragonReticle(dragonTargetPos.x, dragonTargetPos.y);
       return;
     }
@@ -2535,10 +2286,7 @@ function setupEvents() {
   mapSvg.addEventListener('pointermove', e => {
     if (dragonTargeting) {
       const coords = svgCoords(e);
-      dragonTargetPos = {
-        x: Math.max(50, Math.min(1050, Math.round(coords.x))),
-        y: Math.max(60, Math.min(710, Math.round(coords.y)))
-      };
+      dragonTargetPos = E.clampMapPoint({x:Math.round(coords.x),y:Math.round(coords.y)});
       renderDragonReticle(dragonTargetPos.x, dragonTargetPos.y);
       return;
     }
@@ -2906,8 +2654,7 @@ function setupEvents() {
   if ($('menuBrowseLobbiesFromDialogBtn')) {
     $('menuBrowseLobbiesFromDialogBtn').onclick = () => {
       closeModalSafe('friendsDialog');
-      showModalSafe('lobbyBrowserDialog');
-      if (typeof fetchPublicRooms === 'function') fetchPublicRooms();
+      openLobbyBrowser();
     };
   }
 
@@ -2991,7 +2738,10 @@ function setupEvents() {
     // Header badge
     if ($('headerRankIcon')) $('headerRankIcon').textContent = rank.icon;
     if ($('headerRankName')) $('headerRankName').textContent = rankTitle;
-    if ($('headerWinrateTag')) $('headerWinrateTag').textContent = `${wr}% WR`;
+    if ($('headerWinrateTag')) {
+      $('headerWinrateTag').removeAttribute('data-i18n');
+      $('headerWinrateTag').textContent = stats.battles ? `${wr}% ${tr('menu_winrate')}` : tr('menu_no_battles');
+    }
 
     // Main menu strip
     if ($('stripRankIcon')) $('stripRankIcon').textContent = rank.icon;
@@ -3124,7 +2874,7 @@ function setupEvents() {
           <div class="lobby-item-card">
             <div class="lobby-item-meta">
               <span class="lobby-item-code">${r.code}</span>
-              <span class="lobby-item-host">👑 ${hostName}</span>
+              <span class="lobby-item-host">👑 ${esc(hostName)}</span>
               <span class="lobby-item-map">🗺️ ${mapName}</span>
             </div>
             <div class="lobby-item-slots">
@@ -3229,7 +2979,10 @@ function setupEvents() {
   }
 
   if ($('menuHotkeysBtn')) {
-    $('menuHotkeysBtn').onclick = () => showModalSafe('hotkeysDialog');
+    $('menuHotkeysBtn').onclick = () => {
+      closeModalSafe('helpDialog');
+      showModalSafe('hotkeysDialog');
+    };
   }
   if ($('closeHotkeysDialog')) $('closeHotkeysDialog').onclick = () => closeModalSafe('hotkeysDialog');
   if ($('closeHotkeysBtn')) $('closeHotkeysBtn').onclick = () => closeModalSafe('hotkeysDialog');
@@ -3244,6 +2997,7 @@ function setupEvents() {
   // AUTH MODAL & BUTTONS
   if ($('menuAuthBtn')) {
     $('menuAuthBtn').onclick = () => {
+      closeModalSafe('careerDialog');
       clearAuthAlert();
       showModalSafe('authDialog');
     };
@@ -3619,72 +3373,6 @@ function setupEvents() {
   }
 
   // ----------------------------------------------------
-  // TROOP BAR & TRAINING DIALOG EVENT LISTENERS
-  // ----------------------------------------------------
-  if ($('quickRecruit100Btn')) $('quickRecruit100Btn').onclick = () => executeQuickRecruit(100);
-  if ($('troopSoldierBtn')) $('troopSoldierBtn').onclick = () => openTrainingDialog('soldier');
-  if ($('troopArcherBtn')) $('troopArcherBtn').onclick = () => {
-    if (!E.unlocked(state, myRole, 'archer')) {
-      toast(tr('ui_unlock_archer_req'));
-      return;
-    }
-    openTrainingDialog('archer');
-  };
-  if ($('troopKnightBtn')) $('troopKnightBtn').onclick = () => {
-    if (!E.unlocked(state, myRole, 'knight')) {
-      toast(tr('ui_unlock_knight_req'));
-      return;
-    }
-    openTrainingDialog('knight');
-  };
-  if ($('troopCavalryBtn')) $('troopCavalryBtn').onclick = () => {
-    if (!E.unlocked(state, myRole, 'cavalry')) {
-      toast(tr('ui_unlock_cavalry_req'));
-      return;
-    }
-    openTrainingDialog('cavalry');
-  };
-
-  if ($('closeTrainingDialog')) $('closeTrainingDialog').onclick = () => $('trainingDialog').close();
-
-  document.querySelectorAll('#trainTroopGrid .train-type-btn').forEach(btn => {
-    btn.onclick = () => {
-      selectedTrainType = btn.dataset.type;
-      syncTrainingDialog();
-    };
-  });
-
-  if ($('trainStepMinus')) $('trainStepMinus').onclick = () => { trainCount = Math.max(1, trainCount - 5); syncTrainingDialog(); };
-  if ($('trainStep5')) $('trainStep5').onclick = () => { trainCount += 5; syncTrainingDialog(); };
-  if ($('trainStep10')) $('trainStep10').onclick = () => { trainCount += 10; syncTrainingDialog(); };
-  if ($('trainStep25')) $('trainStep25').onclick = () => { trainCount += 25; syncTrainingDialog(); };
-  if ($('trainStepMax')) $('trainStepMax').onclick = () => {
-    const u = E.UNITS[selectedTrainType] || E.UNITS.soldier;
-    const pGold = state.players[myRole]?.gold || 0;
-    trainCount = Math.max(1, Math.min(200, Math.floor(pGold / Math.max(1, u.cost))));
-    syncTrainingDialog();
-  };
-
-  if ($('trainActionBtn')) {
-    $('trainActionBtn').onclick = () => {
-      const c = state.castles[sourceId];
-      if (!c || c.owner !== myRole) return;
-      if (multiplayerMode) {
-        sendWs({ type: 'train_troop', castleId: c.id, troopType: selectedTrainType, count: trainCount });
-        $('trainingDialog').close();
-      } else {
-        const ok = E.trainTroops(state, myRole, c.id, selectedTrainType, trainCount);
-        if (ok) {
-          toast(`⚔️ ${trainCount} ${E.UNITS[selectedTrainType]?.name || selectedTrainType} yollanmoqda (${c.name})`);
-          saveMatch();
-          syncTrainingDialog();
-          updateUI();
-        }
-      }
-    };
-  }
-
-  // ----------------------------------------------------
   // ARMY RECALL EVENT LISTENERS
   // ----------------------------------------------------
   if ($('closeArmyRecallDialog')) $('closeArmyRecallDialog').onclick = () => $('armyRecallDialog').close();
@@ -3711,7 +3399,7 @@ function setupEvents() {
   // ----------------------------------------------------
   if ($('dragonStrikeBtn')) {
     $('dragonStrikeBtn').onclick = () => {
-      if (state.paused || !!state.result) return;
+      if (state.paused || !!state.result || (multiplayerMode && wsClient?.readyState !== 1)) return;
       if (dragonTargeting) {
         cancelDragonStrike();
         return;
@@ -3733,9 +3421,11 @@ function setupEvents() {
         toast("🐉 Ajdaho zarbasi uchun 1000 oltin kerak!");
         return;
       }
+      if(state.dragonStrike)return;
       // Enter targeting mode!
       dragonTargeting = true;
-      const defTarget = targetId !== null ? state.castles[targetId] : { x: 550, y: 380 };
+      $('zoomReset')?.click();
+      const defTarget = targetId !== null ? state.castles[targetId] : { x: 1100, y: 750 };
       dragonTargetPos = { x: defTarget.x, y: defTarget.y };
       $('dragonTargetingOverlay')?.classList.remove('hidden');
       renderDragonReticle(dragonTargetPos.x, dragonTargetPos.y);
@@ -3999,11 +3689,6 @@ function setupEvents() {
       closeCastleManagement();
     };
   }
-  if ($('openTrainingFromMgmtBtn')) {
-    $('openTrainingFromMgmtBtn').onclick = () => {
-      if ($('trainingDialog')) $('trainingDialog').showModal();
-    };
-  }
   if ($('stripRecallBtn')) {
     $('stripRecallBtn').onclick = () => {
       if (selectedArmyId !== null) executeArmyRecall(selectedArmyId);
@@ -4126,7 +3811,7 @@ function setupEvents() {
     };
   }
 
-  if ($('aiStyle')) $('aiStyle').onchange=()=>{if(!multiplayerMode){state.aiStyle=$('aiStyle').value;saveMatch()}};
+  if ($('aiStyle')) $('aiStyle').onchange=()=>{if(!multiplayerMode){E.setAIStyle(state,$('aiStyle').value);saveMatch()}};
 
   if ($('aiDifficulty')) {
     $('aiDifficulty').onchange = () => {
@@ -4161,6 +3846,8 @@ function setupEvents() {
     }
 
     if (e.key === 'Escape') {
+      if(dragonTargeting){e.preventDefault();cancelDragonStrike();return;}
+      if($('resultDialog').open){e.preventDefault();return;}
       if (castleMgmtOpen) {
         closeCastleManagement();
         return;
@@ -4182,7 +3869,7 @@ function setupEvents() {
       }
     }
     const openDialog = document.querySelector('dialog[open]');
-    if (openDialog && openDialog.open && (openDialog.offsetWidth > 0 || openDialog.offsetHeight > 0)) {
+    if (openDialog?.open) {
       if (e.key === 'Escape') openDialog.close();
       return;
     }
@@ -4203,8 +3890,9 @@ function setupEvents() {
       return;
     }
 
-    // Game Hotkey: M -> Toggle Castle Management Side Panel
-    if (e.code === 'KeyM' || e.key?.toLowerCase() === 'm' || e.key === 'ь' || e.key === 'Ь') {
+    // Tab opens management in the battlefield; Shift+Tab and dialog Tab keep focus navigation.
+    if ((!e.shiftKey && (e.key === 'Tab' || e.code === 'Tab')) || e.code === 'KeyM' || e.key?.toLowerCase() === 'm' || e.key === 'ь' || e.key === 'Ь') {
+      if (e.repeat || !$('tacticalLegendModal')?.classList.contains('hidden') || !$('pauseOverlayModal')?.classList.contains('hidden')) return;
       e.preventDefault();
       toggleCastleManagement();
       return;
@@ -4217,15 +3905,13 @@ function setupEvents() {
       return;
     }
 
-    // Game Hotkey: R -> Recall selected army OR Quick Recruit 100 soldiers
+    // Game Hotkey: R -> Recall the selected army
     if (e.code === 'KeyR' || e.key?.toLowerCase() === 'r' || e.key === 'к' || e.key === 'К') {
       e.preventDefault();
       if (selectedArmyId !== null) {
         executeArmyRecall(selectedArmyId);
       } else if (inspectedArmyId !== null && $('armyRecallDialog')?.open) {
         executeArmyRecall(inspectedArmyId);
-      } else {
-        executeQuickRecruit(100);
       }
       return;
     }
@@ -4331,7 +4017,6 @@ function setupEvents() {
         toast("Ajdaho zarbasi bekor qilindi.");
         return;
       }
-      if ($('trainingDialog')?.open) { $('trainingDialog').close(); return; }
       if ($('armyRecallDialog')?.open) { $('armyRecallDialog').close(); return; }
       if ($('menuDialog')?.open) { $('menuDialog').close(); return; }
       if ($('tacticsDialog')?.open) { $('tacticsDialog').close(); return; }
@@ -4368,6 +4053,7 @@ function frame(now) {
     // Glides armies smoothly between 100ms server snapshots at 60/144 FPS matching server SPEED (0.65)
     const moveDt = realDt * 0.65;
     for (const a of state.armies) {
+      if(a.inBattle)continue;
       a.t = Math.min(a.duration, a.t + moveDt);
       const p = E.position(a);
       a.x = p.x;
@@ -4393,15 +4079,17 @@ function frame(now) {
   // FPS Throttling according to Graphics Preset:
   // Low = 30 FPS (33.3ms) -> Keeps weak CPUs cool & responsive
   // Medium = 60 FPS (16.6ms) -> Balanced
-  // High = 144 FPS -> Silky smooth
+  // Medium and High = 60 FPS; simulation timing is independent of the render limit.
   const effQuality = typeof MobileGame !== 'undefined' && MobileGame.getEffectiveQuality ? MobileGame.getEffectiveQuality() : (V.getQuality ? V.getQuality() : 'low');
   const targetFps = effQuality === 'low' ? 30 : 60;
   const minInterval = 1000 / targetFps;
 
-  if (now - lastRenderTime >= minInterval - 1) {
+  const renderElapsed=now-lastRenderTime;
+  if (renderElapsed >= minInterval - 1) {
     V.render(state, targetId, sourceId);
     V.updateWeather?.(now);
-    lastRenderTime = now;
+    // Preserve the remainder at 75/120/144 Hz instead of rounding down to every N callbacks.
+    lastRenderTime = now - (renderElapsed>=minInterval ? renderElapsed%minInterval : 0);
   }
   requestAnimationFrame(frame);
 }
@@ -4460,6 +4148,7 @@ if (typeof MobileGame !== 'undefined') {
   MobileGame.init({
     getState: () => state,
     getRole: () => myRole,
+    isDragonTargeting: () => dragonTargeting,
     getSource: () => sourceId,
     getSelected: () => targetId ?? 2,
     select: id => {

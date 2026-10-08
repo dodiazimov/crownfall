@@ -322,18 +322,7 @@
 
   function syncUI(epoch) {
     document.body.dataset.epoch = epoch;
-    for (const type of roles) {
-      const b = document.querySelector(`[data-troop="${type}"]`);
-      if (!b) continue;
-      const info = CrownEngine.getTroopRoleInfo(epoch, type);
-      b.title = `${info.name} · ${info.role}\n${info.desc || ''}`;
-      b.setAttribute('aria-label', `${info.name}, ${info.role}`);
-      const el = b.querySelector('.chip-icon');
-      if (el && el.dataset.epoch !== epoch) {
-        el.innerHTML = icon(type, epoch);
-        el.dataset.epoch = epoch;
-      }
-    }
+
   }
 
   window.CrownEpochVisuals = Object.freeze({

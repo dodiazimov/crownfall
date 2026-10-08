@@ -11,10 +11,12 @@
   <title>Crownfall · The Verdant Isles</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="fonts.css?v=2.2">
+  <link rel="stylesheet" href="fonts.css?v=2.3">
   <link rel="stylesheet" href="style.css?v=3.0">
   <link rel="stylesheet" href="reference-ui.css?v=1.0">
-  <link rel="stylesheet" href="battlefield-ui.css?v=1.1">
+  <link rel="stylesheet" href="battlefield-ui.css?v=1.2">
+  <link rel="stylesheet" href="menu.css?v=2.0">
+  <link rel="stylesheet" href="royal-ui.css?v=1.1">
 </head>
 <body class="arcade-ui in-menu">
   <noscript>Crownfall needs JavaScript to run. Enable JavaScript and reload the game.</noscript>
@@ -115,232 +117,103 @@
       <g id="icon-chevron-right">
         <path d="M9.29 6.71a.996.996 0 0 0 0 1.41L13.17 12l-3.88 3.88a.996.996 0 1 0 1.41 1.41l4.59-4.59a.996.996 0 0 0 0-1.41L10.7 6.7c-.38-.38-1.02-.38-1.41.01z"/>
       </g>
+      <g id="royal-swords" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+        <path d="m4 3 4 1 11 13-2 2L4 8Zm16 0-4 1-5 6m-2 3-4 5 2 2 5-4M3 15l6 6m6-6 6 6M3 21l3-3m12 0 3 3"/>
+      </g>
     </defs>
   </svg>
 
-  <!-- FULLSCREEN MAIN MENU OVERLAY (AAA GRAND STRATEGY COMMAND CENTER) -->
-  <section id="mainMenuScreen" class="main-menu-screen" aria-label="Crownfall War Room">
-    <!-- 1. CINEMATIC LIVING ENVIRONMENT BACKDROP -->
+  <!-- Royal war room menu. Shared action IDs retain existing match flows. -->
+  <section id="mainMenuScreen" class="main-menu-screen crown-menu" aria-label="Crownfall">
     <div class="menu-ambiance-backdrop" aria-hidden="true">
       <div class="menu-scene-layer scene-bg low" id="menuSceneBgLow"></div>
       <div class="menu-scene-layer scene-bg high" id="menuSceneBgHigh"></div>
       <div class="menu-scene-layer scene-vignette"></div>
-      <div class="menu-scene-layer scene-fog"></div>
-      <!-- Warm organic torch & candle glows positioned on castle sconces -->
-      <div class="torch-flicker-layer">
-        <div class="torch-glow torch-sconce-left"></div>
-        <div class="torch-glow torch-pillar-left"></div>
-        <div class="torch-glow torch-pillar-right"></div>
-        <div class="torch-glow torch-balcony-right"></div>
-      </div>
-      <!-- Ambient atmospheric dust motes & embers canvas -->
-      <canvas id="menuAmbianceCanvas" class="menu-ambiance-canvas"></canvas>
+      <div class="royal-atmosphere"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
-
-    <!-- 2. TOP STATUS & PLAYER PROFILE BAR -->
-    <header class="menu-top-bar">
-      <div class="menu-top-left"></div>
-
-      <!-- Center-left floating pill badge under arch -->
-      <div class="menu-telemetry-cluster">
-        <div class="menu-live-badge" title="Online Live Server">
-          <span class="live-dot pulse-dot"></span>
-          <span class="live-count-text" data-i18n="telemetry_live">11 карт · Онлайн и оффлайн</span>
-        </div>
-      </div>
-
-      <!-- Compact Player Profile Header Button -->
-      <div class="menu-top-right">
-        <div class="menu-top-profile-cluster">
-          <button id="menuCareerBadgeBtn" class="menu-compact-profile" type="button" title="Военное Досье">
-            <div class="profile-avatar-frame">
-              <img id="menuCommanderAvatar" src="assets/hero_vanguard_thumb.webp" alt="Commander" class="profile-avatar-img" width="38" height="38" decoding="async">
-              <span class="profile-rank-badge" id="headerRankIcon">🛡️</span>
-            </div>
-            <div class="profile-text-cluster">
-              <div class="profile-name-row">
-                <svg class="svg-icon crown-mini" viewBox="0 0 24 24"><use href="#icon-crown"></use></svg>
-                <span id="menuUsernameText" class="profile-name">Гость</span>
-              </div>
-              <div class="profile-rank-line">
-                <span class="profile-winrate" id="headerWinrateTag">0% WR</span>
-                <span class="profile-sep">·</span>
-                <span class="profile-rank-name" id="headerRankName" data-i18n="stats_maps_count">9 карт</span>
-              </div>
-            </div>
-          </button>
-
-          <!-- Quick Access Icon Tools -->
-          <div class="menu-header-actions" id="menuAuthProfile">
-            <!-- Header Friends Quick Button -->
-            <button id="menuHeaderFriendsBtn" class="menu-quick-icon-btn" type="button" title="Комнаты и друзья" aria-label="Комнаты">
-              <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-users"></use></svg>
-            </button>
-            <!-- Auth Modal Opener -->
-            <button id="menuAuthBtn" class="menu-quick-icon-btn" type="button" title="Вход / Регистрация" aria-label="Вход / Регистрация">
-              <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-user"></use></svg>
-            </button>
-            <button id="menuLogoutBtn" class="menu-logout-pill hidden" data-i18n="logout" type="button">Выход</button>
-
-            <!-- Audio Toggle Quick Button -->
-            <button id="menuQuickSoundBtn" class="menu-quick-icon-btn" type="button" title="Звуковые эффекты" aria-label="Звуковые эффекты">
-              <span id="menuSoundIcon">🔊</span>
-            </button>
-
-            <!-- Settings Button -->
-            <button id="menuTopSettingsBtn" class="menu-quick-icon-btn" type="button" title="Настройки" aria-label="Настройки">
-              <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-cog"></use></svg>
-            </button>
-          </div>
-        </div>
+    <header class="menu-top-bar crown-menu-header">
+      <div class="royal-realm-label"><span class="royal-realm-diamond" aria-hidden="true"></span><span data-i18n="menu_war_room">War room</span></div>
+      <div class="menu-top-profile-cluster crown-account">
+        <button id="menuCareerBadgeBtn" class="crown-account-button" type="button" data-i18n-title="nav_profile" title="Profile" aria-haspopup="dialog">
+          <span class="royal-portrait"><img id="menuCommanderAvatar" src="assets/hero_vanguard_thumb.webp" alt="" width="58" height="58" decoding="async"></span>
+          <span class="royal-profile-crest" aria-hidden="true"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-crown"></use></svg></span>
+          <span class="crown-account-copy"><strong id="menuUsernameText">Guest</strong><span id="headerRankName"></span><small id="headerWinrateTag" data-i18n="menu_no_battles">No battles yet</small></span>
+          <svg class="svg-icon crown-account-chevron" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+        </button>
       </div>
     </header>
-
-    <!-- 3. INVITE LINK BANNER (SHOWN ONLY WHEN ENTERING VIA INVITE LINK) -->
     <div id="menuInviteBanner" class="menu-invite-banner hidden">
-      <div class="invite-banner-icon">
-        <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-swords"></use></svg>
-      </div>
       <div class="invite-banner-info">
-        <strong class="invite-title" data-i18n="invite_title">Вы приглашены в битву!</strong>
-        <p class="invite-desc"><span data-i18n="invite_room_code">Код комнаты:</span> <b id="inviteRoomCodeText" class="invite-code">CRWN-XXXX</b></p>
+        <strong class="invite-title" data-i18n="invite_title">You are invited to a battle</strong>
+        <p class="invite-desc"><span data-i18n="invite_room_code">Room code:</span> <b id="inviteRoomCodeText" class="invite-code">CRWN-XXXX</b></p>
       </div>
       <div class="invite-banner-actions">
-        <button id="acceptInviteBtn" class="primary-btn gold-btn">
-          <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-swords"></use></svg>
-          <span data-i18n="invite_accept">Присоединиться →</span>
-        </button>
-        <button id="dismissInviteBtn" class="arcade-btn" data-i18n="close">✕</button>
+        <button id="acceptInviteBtn" class="primary-btn gold-btn" type="button"><span data-i18n="invite_accept">Join room</span></button>
+        <button id="dismissInviteBtn" class="arcade-btn" type="button" data-i18n-title="close" title="Close">✕</button>
       </div>
     </div>
 
-    <!-- 4. LEFT STRATEGIC COMMAND COLUMN (THE CORE NAVIGATION RAIL) -->
-    <aside class="menu-left-rail" aria-label="Crownfall Command Navigation">
-      <!-- Crownfall Identity Logo -->
-      <div class="menu-brand-header">
-        <div class="brand-crown-icon">
-          <svg class="svg-icon crown-hero-svg" viewBox="0 0 80 64" aria-hidden="true"><path d="M14 47 7 22 22 33 30 24 40 5 50 24 58 33 73 22 66 47Z" fill="url(#crownGoldGrad)" stroke="#ddc38e" stroke-width="1.2"/><path d="m24 39 7-9 9 12 9-12 7 9-4 9H28Z" fill="#342819"/><path d="m40 14-5 12 5 7 5-7Z" fill="#fff0c5"/><path d="M14 49h52l-3 8H17Z" fill="url(#crownGoldGrad)" stroke="#d1b477"/><path d="M20 53h40" stroke="#fff0c5" stroke-width="1.5"/><circle cx="7" cy="21" r="3" fill="#edcf8a"/><circle cx="73" cy="21" r="3" fill="#edcf8a"/><circle cx="40" cy="5" r="3" fill="#f4db9e"/></svg>
+    <div class="crown-menu-content">
+      <main class="crown-menu-rail">
+        <div class="menu-brand-header crown-brand">
+          <svg class="royal-crown" viewBox="0 0 180 100" aria-hidden="true">
+            <defs><linearGradient id="royalCrownMetal" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#fff1bc"/><stop offset=".38" stop-color="#d0ae68"/><stop offset=".55" stop-color="#f5d998"/><stop offset="1" stop-color="#735127"/></linearGradient></defs>
+            <path d="M12 85h44m68 0h44M28 80l-8 5 8 5m124-10 8 5-8 5" fill="none" stroke="#af8c4b" stroke-width="1"/>
+            <path d="m90 6 9 16-4 10 13 24 18-17-8 35H62l-8-35 18 17 13-24-4-10Z" fill="url(#royalCrownMetal)" stroke="#f3d9a2" stroke-width="1.2"/>
+            <path d="m90 22 5 9-5 10-5-10Zm-16 35 9-9 7 15 7-15 9 9-7 10H81Z" fill="#181915"/>
+            <path d="M63 79h54l-3 10H66Z" fill="url(#royalCrownMetal)" stroke="#e0bd79"/>
+            <path d="M68 83h44" stroke="#fff0c2"/>
+            <path d="m90 93 3 3-3 3-3-3Z" fill="#c6a268"/>
+          </svg>
+          <h1>CROWNFALL</h1>
+          <div class="royal-brand-rule" aria-hidden="true"><span></span></div>
+          <span class="crown-menu-kicker" data-i18n="brand_tagline">Real-time strategy</span>
         </div>
-        <h1 class="brand-logo-text">CROWNFALL</h1>
-        <span class="brand-edition-sub" data-i18n="brand_tagline">ТАКТИКА В РЕАЛЬНОМ ВРЕМЕНИ</span>
-      </div>
-
-      <!-- PRIMARY VERTICAL NAVIGATION (MATCHING reference/main menu.png) -->
-      <nav class="primary-nav-list" aria-label="Main Game Modes">
-        <!-- 1. PLAY / CAMPAIGN & BATTLE SETUP (HERO CHOICE WITH GOLD GLOW) -->
-        <button id="menuSinglePlayBtn" class="primary-nav-card active" type="button">
-          <div class="nav-card-bg-mask" style="background-image: url('assets/nav_battle_bg.webp');"></div>
-          <div class="nav-card-icon">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-swords"></use></svg>
-          </div>
-          <div class="nav-card-texts">
-            <strong class="nav-card-title" data-i18n="nav_play">ИГРАТЬ</strong>
-            <span class="nav-card-sub" data-i18n="nav_play_sub">Ведите свои войска к победе</span>
-          </div>
-          <span class="nav-card-chevron">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-chevron-right"></use></svg>
-          </span>
-        </button>
-
-        <!-- 2. QUICK BATTLE -->
-        <button id="menuQuickMatchBtn" class="primary-nav-card" type="button">
-          <div class="nav-card-bg-mask" style="background-image: url('assets/nav_battle_bg.webp');"></div>
-          <div class="nav-card-icon">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-shield"></use></svg>
-          </div>
-          <div class="nav-card-texts">
-            <strong class="nav-card-title" data-i18n="nav_quick_match">БЫСТРЫЙ БОЙ</strong>
-            <span class="nav-card-sub" data-i18n="nav_quick_match_sub">Найти соперника онлайн</span>
-          </div>
-          <span class="nav-card-chevron">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-chevron-right"></use></svg>
-          </span>
-        </button>
-
-        <!-- 3. PLAY WITH FRIEND -->
-        <button id="menuFriendsBtn" class="primary-nav-card" type="button">
-          <div class="nav-card-bg-mask" style="background-image: url('assets/nav_friends_bg.webp');"></div>
-          <div class="nav-card-icon">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-users"></use></svg>
-          </div>
-          <div class="nav-card-texts">
-            <strong class="nav-card-title" data-i18n="nav_play_friend">ИГРА С ДРУГОМ</strong>
-            <span class="nav-card-sub" data-i18n="nav_play_friend_sub">Создать или войти в комнату</span>
-          </div>
-          <span class="nav-card-chevron">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-chevron-right"></use></svg>
-          </span>
-        </button>
-
-        <!-- 4. TRAINING / PRACTICE AGAINST AI -->
-        <button id="menuTrainingBtn" class="primary-nav-card" type="button">
-          <div class="nav-card-bg-mask" style="background-image: url('assets/nav_training_bg.webp');"></div>
-          <div class="nav-card-icon">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-target"></use></svg>
-          </div>
-          <div class="nav-card-texts">
-            <strong class="nav-card-title" data-i18n="nav_training">ТРЕНИРОВКА</strong>
-            <span class="nav-card-sub" data-i18n="nav_training_sub">Освойте тактику и отточите свои навыки</span>
-          </div>
-          <span class="nav-card-chevron">
-            <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-chevron-right"></use></svg>
-          </span>
-        </button>
-      </nav>
-
-      <div class="rail-divider"></div>
-
-      <!-- SECONDARY QUIET NAVIGATION -->
-      <nav class="secondary-nav-list" aria-label="Secondary Features">
-        <!-- PROFILE / CAREER DOSSIER -->
-        <button id="viewCareerDossierBtn" class="secondary-nav-row" type="button">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-helmet"></use></svg>
-          <span class="sec-label" data-i18n="nav_profile">ПРОФИЛЬ</span>
-        </button>
-
-        <!-- COMMANDERS / WAR COUNCIL -->
-        <button id="menuCommandersBtn" class="secondary-nav-row" type="button">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-ribbon"></use></svg>
-          <span class="sec-label" data-i18n="nav_commanders">ПОЛКОВОДЦЫ</span>
-        </button>
-
-        <!-- ACTIVE LOBBIES BROWSER -->
-        <button id="menuBrowseLobbiesBtn" class="secondary-nav-row" type="button">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-compass"></use></svg>
-          <span class="sec-label" data-i18n="nav_lobbies">АКТИВНЫЕ КОМНАТЫ</span>
-          <span id="menuOpenRoomsBadge" class="sec-badge">0</span>
-        </button>
-
-        <!-- GODOT 3D PROTOTYPE -->
-        <a href="/godot-test/" class="secondary-nav-row" style="text-decoration:none; color:inherit;" target="_blank">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-compass"></use></svg>
-          <span class="sec-label">GODOT 3D PROTOTIP</span>
-          <span class="sec-badge" style="background:rgba(230,126,34,0.25); border-color:#e67e22; color:#f39c12;">3D</span>
-        </a>
-
-        <!-- SETTINGS -->
-        <button id="menuSettingsBtn" class="secondary-nav-row" type="button">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-cog"></use></svg>
-          <span class="sec-label" data-i18n="nav_settings">НАСТРОЙКИ</span>
-        </button>
-
-        <!-- RULES / HELP -->
-        <button id="menuRulesBtn" class="secondary-nav-row" type="button">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-book"></use></svg>
-          <span class="sec-label" data-i18n="nav_rules">СПРАВКА</span>
-        </button>
-
-        <!-- KEYBOARD HOTKEYS -->
-        <button id="menuHotkeysBtn" class="secondary-nav-row" type="button">
-          <svg class="svg-icon sec-svg" viewBox="0 0 24 24"><use href="#icon-keyboard"></use></svg>
-          <span class="sec-label" data-i18n="nav_hotkeys">ГОРЯЧИЕ КЛАВИШИ</span>
-          <kbd class="sec-kbd">?</kbd>
-        </button>
-      </nav>
-
-      <!-- Bottom rail version text -->
-      <div class="menu-rail-version" data-i18n="menu_version">CROWNFALL v 1.0.0</div>
-
+        <nav class="crown-battle-actions" aria-label="Battle modes">
+          <button id="menuSinglePlayBtn" class="royal-action crown-start-battle" type="button" aria-haspopup="dialog">
+            <span class="royal-action-art" aria-hidden="true"></span>
+            <span class="royal-action-inner"><span class="royal-action-icon"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#royal-swords"></use></svg></span>
+              <span class="royal-action-copy"><strong data-i18n="menu_start_battle"></strong><small data-i18n="menu_solo_hint"></small></span>
+              <svg class="svg-icon royal-action-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+            </span>
+          </button>
+          <button id="menuQuickMatchBtn" class="royal-action crown-mode-row royal-online" type="button" aria-haspopup="dialog">
+            <span class="royal-action-art" aria-hidden="true"></span>
+            <span class="royal-action-inner"><span class="royal-action-icon"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+              <span class="royal-action-copy"><strong data-i18n="menu_online_battle"></strong><small data-i18n="menu_online_hint"></small></span>
+              <svg class="svg-icon royal-action-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+            </span>
+          </button>
+          <button id="menuFriendsBtn" class="royal-action crown-mode-row royal-friends" type="button" aria-haspopup="dialog">
+            <span class="royal-action-art" aria-hidden="true"></span>
+            <span class="royal-action-inner"><span class="royal-action-icon"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-users"></use></svg></span>
+              <span class="royal-action-copy"><strong data-i18n="menu_with_friend"></strong><small data-i18n="menu_friend_hint"></small></span>
+              <svg class="svg-icon royal-action-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+            </span>
+          </button>
+          <button id="menuTrainingBtn" class="royal-action crown-practice royal-training" type="button" aria-haspopup="dialog">
+            <span class="royal-action-art" aria-hidden="true"></span>
+            <span class="royal-action-inner"><span class="royal-action-icon"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-target"></use></svg></span>
+              <span class="royal-action-copy"><strong data-i18n="menu_training_title"></strong><small data-i18n="menu_training_hint"></small></span>
+              <svg class="svg-icon royal-action-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+            </span>
+          </button>
+        </nav>
+        <div class="royal-nav-divider" aria-hidden="true"><span></span></div>
+        <nav class="crown-utility-nav" aria-label="Menu">
+          <button id="menuCommandersBtn" type="button" aria-haspopup="dialog"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-ribbon"></use></svg><span data-i18n="menu_commanders"></span></button>
+          <button id="viewCareerDossierBtn" type="button" aria-haspopup="dialog"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-helmet"></use></svg><span data-i18n="menu_profile"></span></button>
+          <button id="menuSettingsBtn" type="button" aria-haspopup="dialog"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-cog"></use></svg><span data-i18n="menu_settings"></span></button>
+          <button id="menuRulesBtn" type="button" aria-haspopup="dialog"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-book"></use></svg><span data-i18n="menu_help"></span></button>
+        </nav>
+      </main>
+      <button id="menuMapPickerBtn" class="crown-battlefield" type="button" aria-haspopup="dialog">
+        <span class="royal-map-art" aria-hidden="true"><svg class="svg-icon " viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-compass"></use></svg></span>
+        <span class="royal-map-copy"><span class="crown-battlefield-eyebrow" data-i18n="menu_battlefield">Battlefield</span><strong id="menuMapName">The Verdant Isles</strong><span class="crown-battlefield-meta"><span id="menuMapMeta"></span><span aria-hidden="true">·</span><span data-i18n="menu_change_map">Change map</span></span></span>
+        <svg class="svg-icon royal-map-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+      </button>
+    </div>
+    <footer class="crown-menu-footer"><span class="royal-footer-brand">CROWNFALL</span><span class="crown-menu-footnote" data-i18n="menu_telemetry">11 battlefields · Online & offline</span></footer>
       <!-- Hidden compatibility hooks for existing script queries -->
       <div id="menuCareerStrip" class="hidden-compat-strip" aria-hidden="true" style="display:none;">
         <span id="stripRankIconWrap"><span id="stripRankIcon">🛡️</span></span>
@@ -357,44 +230,7 @@
         <button id="menuCareerBtn" type="button" style="display:none;"></button>
         <button id="menuLobbyBrowserBtn" type="button" style="display:none;"></button>
       </div>
-    </aside>
-
-    <!-- 5. BOTTOM CENTER-LEFT PRESTIGE QUOTE -->
-    <div class="menu-bottom-quote" data-i18n="menu_quote">«Великие империи начинаются с правильных решений»</div>
-
-    <!-- 6. RIGHT SIDEBAR NICKNAME CARD -->
-    <aside class="menu-nickname-card" id="menuNicknameCard" aria-label="Sizning taxallusingiz">
-      <div class="nickname-card-inner">
-        <div class="nickname-card-header">
-          <svg class="svg-icon crown-gold-svg" viewBox="0 0 24 24"><use href="#icon-helmet"></use></svg>
-          <strong class="nickname-card-title" data-i18n="menu_your_nickname">YOUR NICKNAME</strong>
-        </div>
-        <p class="nickname-card-desc" data-i18n="menu_nickname_desc">Jang maydonidagi nomingizni belgilang</p>
-        <div class="nickname-input-group">
-          <input type="text" id="menuNicknameInput" class="menu-nickname-input" maxlength="20" placeholder="Taxallus kiriting..." autocomplete="off" spellcheck="false" data-i18n-placeholder="menu_nickname_placeholder">
-          <button type="button" id="menuNicknameSaveBtn" class="menu-nickname-save-btn" title="Saqlash">
-            <svg class="svg-icon btn-save-icon" viewBox="0 0 24 24"><use href="#icon-swords"></use></svg>
-            <span data-i18n="btn_save">Saqlash</span>
-          </button>
-        </div>
-      </div>
-    </aside>
-
-    <!-- 7. BOTTOM-RIGHT SEASONAL / MAP CONTENT CARD -->
-    <aside class="menu-bottom-news-card" id="menuNewsCard" aria-label="Карты и обновления">
-      <button id="menuMapPickerBtn" class="news-card-btn" type="button">
-        <div class="news-thumb-frame">
-          <img src="assets/card_new_maps.webp" alt="New Maps" class="news-thumb-img" width="64" height="44" loading="lazy" decoding="async">
-        </div>
-        <div class="news-text-cluster">
-          <strong class="news-headline" data-i18n="news_new_maps">НОВЫЕ КАРТЫ</strong>
-          <span class="news-summary" data-i18n="news_explore_lands">Исследуйте новые земли</span>
-        </div>
-        <span class="news-arrow">
-          <svg class="svg-icon" viewBox="0 0 24 24"><use href="#icon-chevron-right"></use></svg>
-        </span>
-      </button>
-    </aside>
+    <span id="headerRankIcon" hidden></span>
   </section>
 
   <!-- FOCUSED OVERLAY: PLAY WITH FRIEND (REQUIREMENT 14) -->
@@ -599,7 +435,7 @@
               <span class="legend-tag tag-gold">ECONOMY</span>
             </div>
             <div class="legend-yield">Yield: <b>+1.0 – +11.0 🪙/s</b></div>
-            <div class="legend-buff">Buff: High treasury gold; finances army upgrades and emergency recruitment.</div>
+            <div class="legend-buff" data-i18n="buff_gold_desc">Buff: Higher automatic Gold income for castle upgrades.</div>
             <small class="legend-tip">Priority: Capture early to fund war economy & special orders.</small>
           </div>
 
@@ -610,7 +446,7 @@
               <span class="legend-tag tag-troop">MANPOWER</span>
             </div>
             <div class="legend-yield">Yield: <b>+4.0 – +11.0 ⚔/s</b></div>
-            <div class="legend-buff">Buff: Rapid garrison growth; feeds ongoing frontline offensives.</div>
+            <div class="legend-buff" data-i18n="buff_troop_desc">Buff: Rapid garrison growth; feeds ongoing frontline offensives.</div>
             <small class="legend-tip">Priority: Manpower engine. Capture to sustain massive offensives.</small>
           </div>
 
@@ -620,8 +456,8 @@
               <strong class="legend-cat-name" data-i18n="legend_defense_name">DEFENSE NODE</strong>
               <span class="legend-tag tag-defense">DEFENSE</span>
             </div>
-            <div class="legend-yield">Yield: <b>+1.0 ⚔/s</b> · Volley / Defense Aura</div>
-            <div class="legend-buff">Buff: +15% DEF aura to connected allies; pre-emptive archer volley (−15%).</div>
+            <div class="legend-yield">Yield: <b>+1.0 ⚔/s</b> · Defense Bonus</div>
+            <div class="legend-buff" data-i18n="buff_defense_legend">Defense Tower: +15% local defense. Watch Keep: +20% local defense and +15% defense for nearby allies.</div>
             <small class="legend-tip">Priority: Secures flanks and protects valuable economic nodes.</small>
           </div>
 
@@ -631,8 +467,8 @@
               <strong class="legend-cat-name" data-i18n="legend_attack_name">MILITARY NODE</strong>
               <span class="legend-tag tag-attack">ASSAULT</span>
             </div>
-            <div class="legend-yield">Yield: <b>+2.0 ⚔/s</b> · Trains Knights</div>
-            <div class="legend-buff">Buff: +15% siege assault damage for departing armies.</div>
+            <div class="legend-yield">Yield: <b>+2.0 ⚔/s</b></div>
+            <div class="legend-buff" data-i18n="buff_knight_desc">Buff: +20% siege strength and +25% march speed for departing armies.</div>
             <small class="legend-tip">Priority: Staging point to breach heavily fortified citadels.</small>
           </div>
 
@@ -642,8 +478,8 @@
               <strong class="legend-cat-name" data-i18n="legend_support_name">SUPPORT NODE</strong>
               <span class="legend-tag tag-support">MOBILITY</span>
             </div>
-            <div class="legend-yield">Yield: <b>+2.0 ⚔/s</b> · Trains Cavalry</div>
-            <div class="legend-buff">Buff: Swift March (+25% speed) on departing routes.</div>
+            <div class="legend-yield">Yield: <b>+2.0 ⚔/s</b></div>
+            <div class="legend-buff" data-i18n="buff_cavalry_desc">Buff: Swift March (+25% speed) on departing routes.</div>
             <small class="legend-tip">Priority: Enables rapid cross-map response and swift flanking.</small>
           </div>
 
@@ -654,7 +490,7 @@
               <span class="legend-tag tag-capital">VICTORY CORE</span>
             </div>
             <div class="legend-yield">Yield: <b>+3.0 ⚔/s · +1.0 🪙/s</b> · +1.0/s Empire Aura</div>
-            <div class="legend-buff">Buff: Core faction seat & Crown Control victory countdown hub.</div>
+            <div class="legend-buff" data-i18n="buff_elite_desc">Buff: Core faction seat & Crown Control victory countdown hub.</div>
             <small class="legend-tip">Priority: Defend your capital; hold the Citadel for victory.</small>
           </div>
         </div>
@@ -827,19 +663,11 @@
         </button>
       </section>
 
-      <!-- 2. RECRUITMENT & TRAINING -->
-      <section class="mgmt-card">
-        <div class="mgmt-card-head"><h4 data-i18n="ui_troops_title">Qo'shin yollash</h4></div>
-        <div class="mgmt-recruitment-row">
-          <button type="button" class="quick-recruit-pill" id="quickRecruit100Btn" title="Tezkor 100 askar chiqarish (Klaviatura: R)">
-            <span class="troop-icon">⚡</span>
-            <span class="troop-name" data-i18n="ui_quick_100">+100 Askar</span>
-            <kbd class="kbd-sub">R</kbd>
-          </button>
-          <button type="button" class="mgmt-open-train-btn" id="openTrainingFromMgmtBtn">
-            <span>🛡️</span> <span data-i18n="ui_train">Yollash</span> →
-          </button>
-        </div>
+      <section class="mgmt-card mgmt-buff-card">
+        <div class="mgmt-card-head"><h4 data-i18n="ui_castle_buffs">Qal'a bonusi</h4></div>
+        <p id="mgmtBuffDescription" class="mgmt-buff-description"></p>
+        <small id="mgmtBuffScope" class="mgmt-buff-scope"></small>
+        <p class="mgmt-buff-hint" data-i18n="ui_auto_garrison">Qo'shin qal'ada avtomatik ko'payadi. Maxsus qal'alar bonus beradi.</p>
       </section>
 
       <!-- 3. RESERVE, SUPPLY & SPECIALIZATION (OPENS TACTICS CONFIG) -->
@@ -885,31 +713,12 @@
             <svg class="svg-icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><use href="#icon-refresh"></use></svg>
             <kbd class="kbd-sub">C</kbd>
           </button>
-          <button type="button" id="moreCommandsBtn" class="castle-manage-icon-btn" aria-expanded="false" aria-controls="castleManagementPanel" title="Qal'a boshqaruvi (Klaviatura: M)" aria-label="Qal'a boshqaruvi">
+          <button type="button" id="moreCommandsBtn" aria-keyshortcuts="Tab M" class="castle-manage-icon-btn" aria-expanded="false" aria-controls="castleManagementPanel" title="Qal'a boshqaruvi (Klaviatura: Tab)" aria-label="Qal'a boshqaruvi">
             <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-cog"></use></svg>
-            <span class="mgmt-btn-label" data-i18n="ui_manage">Manage</span>
+            <span class="mgmt-btn-label" data-i18n="ui_manage">Manage</span><kbd class="kbd-sub">Tab</kbd>
           </button>
         </div>
 
-        <!-- Compact Troop Composition Chips -->
-        <div class="strip-troops" id="troopBar" aria-label="Troop recruitment">
-          <button type="button" class="troop-chip" id="troopSoldierBtn" data-troop="soldier" title="Infantry (Soldier)">
-            <span class="chip-icon">⚔</span>
-            <b class="chip-count" id="countSoldier">0</b>
-          </button>
-          <button type="button" class="troop-chip locked" id="troopArcherBtn" data-troop="archer" title="Archer">
-            <span class="chip-icon">🏹</span>
-            <b class="chip-count" id="countArcher">0</b>
-          </button>
-          <button type="button" class="troop-chip locked" id="troopKnightBtn" data-troop="knight" title="Knight">
-            <span class="chip-icon">🛡</span>
-            <b class="chip-count" id="countKnight">0</b>
-          </button>
-          <button type="button" class="troop-chip locked" id="troopCavalryBtn" data-troop="cavalry" title="Cavalry">
-            <span class="chip-icon">🐎</span>
-            <b class="chip-count" id="countCavalry">0</b>
-          </button>
-        </div>
       </div>
 
       <!-- CONTEXT B: MOVING ARMY SELECTED -->
@@ -1010,7 +819,7 @@
           <div id="targetComposition" class="unit-composition" style="display:none;"></div>
           <div id="targetCaptureReward" class="capture-reward-card" style="display:none;" aria-label="Capture Reward">
             <span class="reward-tag">🎁 REWARD:</span>
-            <span id="targetRewardUnlocks" class="reward-val-unlock">🏹 Archer</span>
+            <span id="targetRewardUnlocks" class="reward-val-unlock">Castle bonus</span>
             <span id="targetRewardIncome" class="reward-val-income">+2.0 ⚔/s · +0.5 🪙/s</span>
           </div>
           <span id="battleForecast" class="battle-forecast-val"></span>
@@ -1424,103 +1233,6 @@
     </div>
   </dialog>
 
-  <!-- TROOP TRAINING MODAL -->
-  <dialog id="trainingDialog" class="arcade-dialog training-modal" style="max-width:520px;">
-    <button class="close-dialog-btn" id="closeTrainingDialog" type="button" aria-label="Close">✕</button>
-    <div class="dialog-header text-center">
-      <div class="hero-crest-core" style="margin: 0 auto 6px;">
-        <span style="font-size:24px;">⚔️</span>
-      </div>
-      <h2 class="cinzel-title" id="trainingTitle" data-i18n="ui_troops_title">Qo'shin yollash</h2>
-      <p style="font-size:13px;color:var(--text-muted);margin:4px 0 0;" data-i18n="ui_train_hint">Oltin evaziga maxsus qo'shinlarni yollang.</p>
-    </div>
-    <div class="dialog-body" style="padding:10px 14px 18px;">
-      <div class="training-castle-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:rgba(6,20,34,0.6);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
-        <div>
-          <strong id="trainCastleName" style="color:var(--blue);font-size:14px;">Azurehold</strong>
-          <small id="trainCastleType" style="display:block;color:var(--text-muted);font-size:11px;">Level 1 · Balanced</small>
-        </div>
-        <div style="text-align:right;">
-          <span style="font-size:12px;color:var(--gold);font-weight:700;" id="trainCastleGold">200 🪙</span>
-        </div>
-      </div>
-      <p id="trainFeedback" class="inline-feedback" role="status" style="margin-bottom:8px;"></p>
-      
-      <!-- TROOP SELECTOR GRID -->
-      <div class="troop-type-grid" id="trainTroopGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
-        <button type="button" class="train-type-btn active" data-type="soldier">
-          <span class="type-icon">⚔</span>
-          <strong data-i18n="ui_soldier">Piyoda</strong>
-          <small>15 🪙</small>
-        </button>
-        <button type="button" class="train-type-btn" data-type="archer">
-          <span class="type-icon">🏹</span>
-          <strong data-i18n="ui_archer">O'qchi</strong>
-          <small>25 🪙</small>
-        </button>
-        <button type="button" class="train-type-btn" data-type="knight">
-          <span class="type-icon">🛡</span>
-          <strong data-i18n="ui_knight">Ritsar</strong>
-          <small>40 🪙</small>
-        </button>
-        <button type="button" class="train-type-btn" data-type="cavalry">
-          <span class="type-icon">🐎</span>
-          <strong data-i18n="ui_cavalry">Otliq</strong>
-          <small>35 🪙</small>
-        </button>
-      </div>
-
-      <!-- UNIT DETAILS CARD -->
-      <div class="unit-detail-card" id="trainUnitDetail" style="background:rgba(6,20,34,0.6);padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <strong id="trainUnitName" style="color:var(--gold);font-size:13px;">Soldier</strong>
-          <span class="unit-unlock-badge" id="trainUnlockBadge" style="font-size:11px;color:#2ecc71;">Unlocked</span>
-        </div>
-        <p id="trainUnitDesc" style="font-size:11px;color:var(--text-muted);margin:0 0 8px;line-height:1.4;">Standard melee infantry. Frontline fighter with balanced stats.</p>
-        <div class="unit-stats-row" id="trainUnitStats" style="display:flex;gap:12px;font-size:11px;color:var(--text);">
-          <span>HP: <b id="statHp">100</b></span>
-          <span>DMG: <b id="statDmg">15</b></span>
-          <span>SPD: <b id="statSpd">1.0x</b></span>
-          <span>ARM: <b id="statArm">0</b></span>
-        </div>
-      </div>
-
-      <!-- QUANTITY CONTROLS -->
-      <div class="train-quantity-wrap" style="margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <label style="font-size:12px;font-weight:700;color:var(--text);"><span data-i18n="ui_troops">Qo'shin</span>: <b id="trainQuantityCount" style="color:var(--gold);font-size:15px;">5</b></label>
-          <div style="font-size:11px;color:var(--text-muted);">
-            <span data-i18n="ui_train_cost">Narxi</span>: <b id="trainCostTotal" style="color:var(--gold);">75 🪙</b> · 
-            <span data-i18n="ui_train_time">Vaqti</span>: <b id="trainTimeTotal">12.5s</b>
-          </div>
-        </div>
-        <div class="train-qty-btns" style="display:flex;gap:6px;">
-          <button type="button" class="arcade-btn train-step-btn" id="trainStepMinus">-5</button>
-          <button type="button" class="arcade-btn train-step-btn" id="trainStep5">+5</button>
-          <button type="button" class="arcade-btn train-step-btn" id="trainStep10">+10</button>
-          <button type="button" class="arcade-btn train-step-btn" id="trainStep25">+25</button>
-          <button type="button" class="arcade-btn train-step-btn" id="trainStepMax">MAX</button>
-        </div>
-      </div>
-
-      <!-- TRAINING QUEUE STATUS -->
-      <div class="train-queue-section" style="margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <strong style="font-size:12px;color:var(--text);" data-i18n="ui_queue_label">Yollash navbati</strong>
-          <small id="trainQueueCount" style="color:var(--text-muted);font-size:11px;">0 active</small>
-        </div>
-        <div id="trainQueueContainer" class="train-queue-container" style="min-height:36px;background:rgba(0,0,0,0.3);border-radius:6px;padding:6px;border:1px dashed var(--border);">
-          <span style="font-size:11px;color:var(--text-muted);display:block;text-align:center;padding:4px;" id="trainQueueEmpty">Navbat bo'sh</span>
-        </div>
-      </div>
-
-      <!-- ACTION BUTTON -->
-      <button id="trainActionBtn" class="primary-btn gold-btn" style="width:100%;padding:12px;font-size:14px;">
-        <span data-i18n="ui_train">Yollash</span> (<span id="trainBtnCost">75 🪙</span>)
-      </button>
-    </div>
-  </dialog>
-
   <!-- ARMY INSPECTION & RECALL MODAL -->
   <dialog id="armyRecallDialog" class="arcade-dialog recall-modal" style="max-width:440px;">
     <button class="close-dialog-btn" id="closeArmyRecallDialog" type="button" aria-label="Close">✕</button>
@@ -1547,32 +1259,6 @@
         ⚔ <span data-i18n="ui_in_battle">Yo'l jangida qatnashmoqda</span>
       </div>
 
-      <div style="margin-bottom:12px;">
-        <strong style="font-size:12px;color:var(--text);display:block;margin-bottom:6px;" data-i18n="ui_composition">Tarkibi</strong>
-        <div class="army-comp-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-          <div class="comp-box" style="background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;">
-            <span style="font-size:14px;display:block;">⚔</span>
-            <small style="font-size:10px;color:var(--text-muted);" data-i18n="ui_soldier">Piyoda</small>
-            <b id="recallCountSoldier" style="display:block;font-size:13px;color:#fff;">0</b>
-          </div>
-          <div class="comp-box" style="background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;">
-            <span style="font-size:14px;display:block;">🏹</span>
-            <small style="font-size:10px;color:var(--text-muted);" data-i18n="ui_archer">O'qchi</small>
-            <b id="recallCountArcher" style="display:block;font-size:13px;color:#2ecc71;">0</b>
-          </div>
-          <div class="comp-box" style="background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;">
-            <span style="font-size:14px;display:block;">🛡</span>
-            <small style="font-size:10px;color:var(--text-muted);" data-i18n="ui_knight">Ritsar</small>
-            <b id="recallCountKnight" style="display:block;font-size:13px;color:#3498db;">0</b>
-          </div>
-          <div class="comp-box" style="background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;">
-            <span style="font-size:14px;display:block;">🐎</span>
-            <small style="font-size:10px;color:var(--text-muted);" data-i18n="ui_cavalry">Otliq</small>
-            <b id="recallCountCavalry" style="display:block;font-size:13px;color:#e67e22;">0</b>
-          </div>
-        </div>
-      </div>
-
       <button type="button" id="armyRecallActionBtn" class="primary-btn" style="width:100%;padding:12px;">
         <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:6px;"><use href="#icon-refresh"></use></svg>
         <span data-i18n="ui_recall_army">Armiyani qaytarish</span>
@@ -1593,6 +1279,10 @@
       <p data-i18n-html="rules_p3"><b>1:1 Toza Jang:</b> Hujumchilar minus himoyachilar. Omon qolgan askarlar qal'ada qolib, uning yangi himoyachisiga aylanadi!</p>
       <p data-i18n-html="rules_p4"><b>Yo'ldagi to'qnashuvlar:</b> Qarama-qarshi qo'shinlar yo'lda uchrashsa, to'qnashadi. Son jihatdan ko'p tomon g'alaba qozonib yo'lni davom ettiradi.</p>
       <p data-i18n="audit_special_buildings"></p><p data-i18n="audit_required_help"></p><p data-i18n="audit_friendly_help"></p><p data-i18n-html="rules_p5"><b>Rivojlanish:</b> Har bir qal'a o'z askarlarini ishlab chiqaradi. Oltin evaziga qal'alarni 2- va 3-darajaga upgrade qiling.</p>
+      <div class="crown-help-links">
+        <button id="menuHotkeysBtn" class="arcade-btn" type="button" data-i18n="nav_hotkeys">Keyboard shortcuts</button>
+        <a href="/godot-test/" target="_blank" rel="noopener" data-i18n="menu_prototype">Open 3D prototype ↗</a>
+      </div>
       <button class="primary-btn" id="startPlaying" style="width:100%;margin-top:15px;" data-i18n="rules_back_btn">Jangga Qaytish →</button>
     </div>
   </dialog>
@@ -1846,6 +1536,14 @@
             <td data-i18n-html="hotkey_space"><b>Armiya yuborish (Hujum / Yordam):</b> Tanlangan nishon qal'aga darhol qo'shin yuboradi.</td>
           </tr>
           <tr>
+            <td><kbd>Tab</kbd> / <kbd>M</kbd></td>
+            <td data-i18n-html="hotkey_manage">Boshqaruv panelini ochish yoki yopish.</td>
+          </tr>
+          <tr>
+            <td><kbd>R</kbd></td>
+            <td data-i18n-html="hotkey_recall">Tanlangan armiyani qaytarish.</td>
+          </tr>
+          <tr>
             <td><kbd>C</kbd></td>
             <td data-i18n-html="hotkey_tab"><b>Keyingi qal'angizga o'tish:</b> O'zingizga tegishli qal'alar bo'ylab tezkor navbatma-navbat o'tish.</td>
           </tr>
@@ -1906,6 +1604,18 @@
       <p style="font-size:13px;color:var(--text-muted);margin:4px 0 0;" data-i18n="career_dossier_subtitle">Jangovar xizmat va erishilgan yutuqlar</p>
     </div>
     <div class="dialog-body" style="max-height:65vh;overflow-y:auto;padding:10px 14px 18px;">
+      <section id="menuNicknameCard" class="crown-profile-editor">
+        <label for="menuNicknameInput" data-i18n="menu_your_nickname">Your nickname</label>
+        <div class="crown-profile-input-row">
+          <input type="text" id="menuNicknameInput" maxlength="20" placeholder="Enter a nickname" autocomplete="nickname" spellcheck="false" data-i18n-placeholder="menu_nickname_placeholder">
+          <button id="menuNicknameSaveBtn" class="arcade-btn" type="button" data-i18n="btn_save">Save</button>
+        </div>
+        <div id="menuAuthProfile" class="crown-profile-auth">
+          <button id="menuAuthBtn" class="crown-text-button" type="button" data-i18n="login_register">Sign in / Register</button>
+          <button id="menuLogoutBtn" class="crown-text-button hidden" type="button" data-i18n="logout">Sign out</button>
+        </div>
+      </section>
+
       <!-- RANK PROGRESS CARD -->
       <div class="career-rank-card" id="careerRankCard">
         <div class="rank-card-left">
@@ -2045,19 +1755,19 @@
 
   <!-- SCRIPTS -->
   <script src="i18n.js?v=2.2"></script>
-  <script src="ui-copy.js?v=2.2"></script>
+  <script src="ui-copy.js?v=6.0"></script>
   <script src="sound.js?v=2.2"></script>
-  <script src="engine.js?v=2.3"></script>
+  <script src="engine.js?v=6.0"></script>
   <script src="ai.js?v=2.2"></script>
   <script src="castle-anchors.js?v=1.2"></script>
   <script src="road-definitions.js?v=1.0"></script>
-  <script src="map-style.js?v=3.4"></script>
-  <script src="epoch-visuals.js?v=4.0"></script>
-  <script src="army-art.js?v=1.1"></script>
-  <script src="view.js?v=5.1"></script>
+  <script src="map-style.js?v=3.5"></script>
+  <script src="epoch-visuals.js?v=6.0"></script>
+  <script src="army-art.js?v=6.0"></script>
+  <script src="view.js?v=6.0"></script>
   <script src="career.js?v=2.2"></script>
-  <script src="ui-menu.js?v=2.2"></script>
+  <script src="ui-menu.js?v=2.3"></script>
   <script src="experience.js?v=2.4"></script>
-  <script src="app.js?v=2.4"></script>
+  <script src="app.js?v=6.0"></script>
 </body>
 </html>

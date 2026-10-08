@@ -1,0 +1,332 @@
+/* Shared war-room materials. Loaded after the menu and battlefield layout sheets.
+   Faction colours and tactical warning colours deliberately remain semantic. */
+:root {
+  --royal-gold: #cfb078;
+  --royal-light: #f5e6be;
+  --royal-ink: #091119;
+  --royal-serif: 'Cormorant Garamond', Georgia, serif;
+  --royal-steel: #53616a;
+  --royal-line: #746345;
+  --royal-muted: #a7b0b3;
+  --royal-panel: linear-gradient(135deg, #1c2a32, #101b24 38%, #091119);
+  --royal-inset: linear-gradient(180deg, #0c151d, #080f16);
+  --royal-button: linear-gradient(180deg, #26353e, #15222c 48%, #101a23);
+  --royal-selected: linear-gradient(135deg, #443c2c, #2b291f 55%, #201e18);
+  --royal-bevel: inset 0 1px #e5e9dc18, inset 0 -2px #0005;
+  --royal-frame: inset 0 0 0 3px #091119, inset 0 0 0 4px #cfb07820, 0 12px 40px #0009;
+  --bg: var(--royal-ink);
+  --bg-dark: #060c12;
+  --panel-bg: #101b24;
+  --panel-bg-subtle: #15212b;
+  --border: #43515b;
+  --border-gold: #8a744e;
+  --border-gold-bright: var(--royal-gold);
+  --border-glow: #cfb07830;
+  --gold: var(--royal-gold);
+  --gold-light: var(--royal-light);
+  --gold-dark: #91774a;
+  --text: #e7e7de;
+  --text-muted: var(--royal-muted);
+  --text-dim: #8a969c;
+  --font-title: var(--royal-serif);
+  --radius: 3px;
+  --radius-sm: 2px;
+  --radius-lg: 4px;
+  --glass-bg: #101b24f5;
+  --glass-border: #53616a;
+  --glass-shadow: var(--royal-frame);
+}
+
+/* Dialogs use the same inset brass frame as the main-menu profile. */
+body .arcade-dialog,
+body[data-quality] .arcade-dialog,
+.pause-card,
+.legend-card {
+  color: var(--text);
+  background: var(--royal-panel) !important;
+  border: 1px solid var(--royal-gold) !important;
+  border-radius: 3px !important;
+  box-shadow: var(--royal-frame) !important;
+}
+.arcade-dialog::backdrop, dialog::backdrop,
+body[data-quality] .arcade-dialog::backdrop {
+  background: #03080dcc !important;
+  backdrop-filter: blur(6px) !important;
+}
+body[data-quality="low"] .arcade-dialog::backdrop { backdrop-filter: none !important; }
+.arcade-dialog { scrollbar-width: thin; scrollbar-color: #746345 #091119; }
+.arcade-dialog .dialog-header {
+  border-bottom: 1px solid #cfb07850;
+  padding-bottom: 16px;
+}
+.arcade-dialog .dialog-header.text-center { flex-direction: column; gap: 6px; }
+.arcade-dialog .dialog-header:not(.text-center) { padding-right: 36px; }
+.arcade-dialog .setting-group > label { color: #d5d8d0; }
+.arcade-dialog .dialog-header h2,
+.arcade-dialog.result-dialog h2,
+.pause-title,
+.legend-title-row h3 {
+  font-family: var(--royal-serif) !important;
+  font-weight: 700;
+  color: var(--royal-light) !important;
+  letter-spacing: .025em;
+  text-shadow: 0 2px 3px #0008;
+}
+.arcade-dialog .dialog-header h2 { font-size: clamp(26px, 3vw, 32px); line-height: 1.1; }
+.arcade-dialog :is(.difficulty-subtitle, .dialog-subtitle, .preview-empty, .preview-playstyle),
+.pause-sub { color: var(--royal-muted) !important; }
+.arcade-dialog :is(h3, h4), .mgmt-title, .mgmt-card-head h4,
+.coach > strong, .player-table-header, .forecast-title-wrap strong {
+  font-family: var(--royal-serif);
+  color: var(--royal-light);
+}
+.commander-footer { border-top-color: #cfb07850 !important; background: transparent !important; }
+
+/* Neutral controls are steel; gold consistently means selected or primary. */
+.arcade-dialog :is(button, .diff-card),
+.pause-action-btn,
+.mgmt-content button {
+  border-radius: 2px !important;
+  text-shadow: none;
+}
+.arcade-dialog :is(.arcade-btn, .lang-btn, .sound-toggle-btn, .speed-opt-btn,
+  .sp-pcount-btn, .sp-vmode-btn, .sp-epoch-btn, .sp-region-btn, .maxp-btn,
+  .slot-bot-btn, .auth-tab-btn, .train-type-btn, .train-step-btn, .lobby-hero-btn,
+  .diff-card, .utility-pill-btn, .join-room-btn, .glass-action-btn),
+.secondary-pause-btn,
+.mgmt-content button {
+  color: #e0e1d7 !important;
+  background: var(--royal-button) !important;
+  border: 1px solid var(--royal-steel) !important;
+  box-shadow: var(--royal-bevel) !important;
+}
+.arcade-dialog :is(.primary-btn, .dialog-major-cta-btn, .join-room-submit-btn, .start-battle-btn),
+.primary-pause-btn,
+.arcade-dialog :is(.lang-btn, .sound-toggle-btn, .speed-opt-btn, .sp-pcount-btn,
+  .sp-vmode-btn, .sp-epoch-btn, .sp-region-btn, .maxp-btn, .slot-bot-btn,
+  .auth-tab-btn, .train-type-btn, .lobby-hero-btn, .diff-card).active,
+.arcade-dialog :is(.sp-epoch-btn, .sp-region-btn)[aria-pressed="true"],
+#rematchBtn {
+  color: var(--royal-light) !important;
+  background: var(--royal-selected) !important;
+  border: 1px solid var(--royal-gold) !important;
+  box-shadow: inset 0 0 0 2px #cfb07815, inset 0 1px #ffe1a050, 0 2px 5px #0004 !important;
+}
+.arcade-dialog button:not(:disabled):hover, .mgmt-content button:not(:disabled):hover,
+.pause-action-btn:hover {
+  border-color: var(--royal-gold) !important;
+  filter: brightness(1.12);
+}
+.arcade-dialog button:disabled, .mgmt-content button:disabled { filter: saturate(.3); opacity: .48; }
+:is(.arcade-dialog, .pause-card, .castle-mgmt-panel, .game-hud, .map-tools) :is(button, input, select, summary):focus-visible {
+  outline: 2px solid var(--royal-light) !important;
+  outline-offset: 3px;
+}
+.arcade-dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select),
+.arcade-dialog .join-room-field {
+  background: #080f17 !important;
+  border: 1px solid var(--royal-steel) !important;
+  border-radius: 2px !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 2px 5px #0005 !important;
+  min-width: 0;
+}
+.arcade-dialog :is(input, select):focus { border-color: var(--royal-gold) !important; }
+.arcade-dialog input::placeholder { color: #909da5; }
+.arcade-dialog input:is([type="checkbox"], [type="radio"], [type="range"]) { accent-color: var(--royal-gold); }
+.arcade-dialog .arcade-slider {
+  background: linear-gradient(#746345, #746345) center / 100% 4px no-repeat;
+}
+.arcade-slider::-webkit-slider-thumb {
+  background: var(--royal-gold);
+  border: 2px solid var(--royal-light);
+  box-shadow: 0 2px 4px #0007;
+}
+.arcade-slider::-moz-range-thumb {
+  width: 12px; height: 12px;
+  background: var(--royal-gold);
+  border: 2px solid var(--royal-light);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px #0007;
+}
+.arcade-dialog :is(.close-dialog-btn, .room-connect-close-btn), .mgmt-close-btn {
+  color: #c7cdc9 !important;
+  background: var(--royal-button) !important;
+  border: 1px solid var(--royal-steel) !important;
+  border-radius: 2px !important;
+  box-shadow: var(--royal-bevel) !important;
+}
+.arcade-dialog .close-dialog-btn { min-width: 44px; min-height: 44px; }
+.arcade-dialog :is(.dialog-quiet-link-btn, .crown-text-button) { color: var(--royal-gold) !important; }
+.arcade-dialog .dialog-major-cta-btn { font-size: 17px; }
+.arcade-dialog .dialog-crest-icon {
+  background: #cfb07812; border-color: #8a744e; color: var(--royal-gold); border-radius: 2px;
+}
+.arcade-dialog .dialog-or-divider { color: var(--royal-muted); }
+.arcade-dialog .matchmaking-spinner { border-color: #cfb07830 !important; border-top-color: var(--royal-gold) !important; }
+
+/* Commander, campaign, profile and online-room surfaces. */
+.arcade-dialog :is(.hero-preview, .battle-settings, .epoch-preview-card, .career-rank-card,
+  .c-stat-box, .achievement-card, .lobby-slot-card, .lobby-item-card, .empty-lobbies-card,
+  .unit-detail-card, .train-queue-container, .result-stat-card, .comp-box, .legend-item,
+  .lobby-code-row, #lobbyMaxPlayersRow) {
+  background: var(--royal-inset) !important;
+  border: 1px solid #43515b !important;
+  border-radius: 3px !important;
+  box-shadow: inset 0 1px #e5e9dc0a !important;
+}
+.arcade-dialog .hero-card {
+  background: var(--royal-inset);
+  border-color: var(--royal-steel);
+  border-radius: 2px !important;
+  box-shadow: var(--royal-bevel);
+}
+.arcade-dialog .hero-card:is(.selected, .active, [aria-pressed="true"]),
+.arcade-dialog .achievement-card.unlocked { border-color: var(--royal-gold) !important; }
+.arcade-dialog .hero-card:is(.selected, .active, [aria-pressed="true"]) {
+  background: var(--royal-selected) !important;
+  box-shadow: inset 0 0 0 1px #cfb07860 !important;
+}
+.hero-card-art::after { background: linear-gradient(transparent 45%, #091119); }
+.arcade-dialog :is(.hero-card-badge, .lobby-selected-mark, .diff-badge) {
+  color: var(--royal-light) !important;
+  background: #332e23 !important;
+  border: 1px solid #8a744e;
+  border-radius: 2px !important;
+}
+.arcade-dialog :is(.hero-card-name, .rank-card-title, .lobby-item-code, .preview-role, .preview-ability) {
+  color: var(--royal-gold) !important;
+}
+.arcade-dialog :is(.hero-card-role, .hero-card-perk, .epoch-preview-meta, .ach-info p) { color: var(--royal-muted); }
+.arcade-dialog :is(.lobby-code-badge, .lobby-link-box, .lobby-slot-header, .training-castle-header) {
+  background: #192630 !important;
+  border-color: var(--royal-steel) !important;
+  color: var(--royal-light);
+  border-radius: 2px !important;
+}
+.rank-progress-bar-wrap { background: #050b11 !important; border: 1px solid #43515b; border-radius: 2px !important; }
+.rank-progress-bar-fill, .train-queue-bar { background: linear-gradient(90deg, #84683c, #cfb078) !important; box-shadow: none !important; }
+.lobby-slot-dot.filled { background: var(--royal-gold) !important; box-shadow: none !important; }
+.arcade-dialog .train-queue-item { background: #15212b; border-color: #43515b; border-radius: 2px; }
+.arcade-dialog :is(.hotkeys-table th, .hotkeys-table td) { border-color: #43515b; }
+kbd, .kbd-pill, .kbd-sub { background: #091119 !important; color: #c7cdc9 !important; border-color: #53616a !important; border-radius: 2px !important; box-shadow: none !important; }
+
+/* The battlefield keeps compact, readable measurements; only its materials change. */
+body.in-game {
+  --cf-ink: var(--royal-ink);
+  --cf-panel: #101b24;
+  --cf-line: var(--royal-line);
+  --cf-steel: #43515b;
+  --cf-text: var(--text);
+  --cf-muted: var(--royal-muted);
+}
+body.in-game .game-hud {
+  background: var(--royal-panel) !important;
+  border-bottom-color: #ad915d !important;
+  box-shadow: inset 0 -3px #091119, inset 0 -4px #cfb07825, 0 3px 12px #0007 !important;
+}
+body.in-game .hud-brand-title { color: var(--royal-gold) !important; }
+body.in-game .game-hud .gold-pill strong { color: var(--royal-light) !important; }
+body.in-game .game-hud .hud-hero-avatar { border-color: var(--royal-gold); }
+body.in-game .game-dock {
+  background: var(--royal-panel) !important;
+  border-color: #ad915d !important;
+  box-shadow: inset 0 0 0 3px #091119, inset 0 0 0 4px #cfb07820, 0 8px 30px #0009 !important;
+}
+body.in-game #gameDock .dock-section {
+  background: var(--royal-inset) !important;
+  border-color: #39464f !important;
+}
+body.in-game .game-hud .hud-btn,
+body.in-game .map-tools button,
+body.in-game .minimap-toggle-btn,
+body.in-game #gameDock :is(.pct-btn, .all-btn, .strip-route-btn, .reserve-btn,
+  .cycle-arrow-btn, .castle-manage-icon-btn, .strip-recall-btn, .strip-focus-btn, .strip-close-context-btn) {
+  background: var(--royal-button) !important;
+  border-color: var(--royal-steel) !important;
+  color: #d6d9d1 !important;
+  box-shadow: var(--royal-bevel) !important;
+}
+body.in-game #gameDock :is(.pct-btn, .all-btn, .strip-route-btn):is(.active, [aria-pressed="true"]),
+body.in-game #gameDock .castle-manage-icon-btn,
+body.in-game #gameDock #dispatchActionBtn:not(:disabled) {
+  background: var(--royal-selected) !important;
+  border-color: var(--royal-gold) !important;
+  color: var(--royal-light) !important;
+  box-shadow: inset 0 0 0 2px #cfb07815, inset 0 1px #ffe1a050 !important;
+}
+body.in-game #gameDock :is(button, .strip-route-btn):not(:disabled):hover,
+body.in-game .game-hud .hud-btn:hover,
+body.in-game .map-tools button:hover {
+  border-color: var(--royal-gold) !important;
+  color: var(--royal-light) !important;
+}
+body.in-game #gameDock #dispatchActionBtn:disabled {
+  background: var(--royal-inset) !important;
+  border-color: #39464f !important;
+  color: #859299 !important;
+  box-shadow: none !important;
+}
+
+/* Floating battlefield windows share the dialog frame, at a lighter weight. */
+body.in-game :is(.castle-mgmt-panel, .game-player-table, .coach, .weather-forecast-popover,
+  .minimap-container, .hero-rail-pop, .tooltip, .unit-battle-panel),
+.resume-notice {
+  background: var(--royal-panel) !important;
+  border: 1px solid #a58b5c !important;
+  border-radius: 3px !important;
+  color: var(--text);
+  box-shadow: inset 0 0 0 2px #091119, inset 0 0 0 3px #cfb07815, 0 6px 20px #0007 !important;
+}
+body.in-game :is(.mgmt-header, .player-table-header, .forecast-header) {
+  background: transparent !important;
+  border-bottom-color: #cfb07850 !important;
+}
+body.in-game .mgmt-card { background: var(--royal-inset) !important; border-color: #43515b !important; border-radius: 2px !important; }
+body.in-game .legend-item { background: var(--royal-inset); border-color: #43515b; }
+body.in-game .mgmt-meta, .next-weather-row small { color: var(--royal-muted); }
+body.in-game .mgmt-card-head h4 { font-family: var(--font-ui); font-size: 11px; color: var(--royal-gold); }
+body.in-game .coach small, .forecast-label, .forecast-title-wrap small { color: var(--royal-gold) !important; }
+body.in-game .coach p, .forecast-section p { color: #c7cec9 !important; }
+body.in-game .coach-dots i { background: #43515b !important; }
+body.in-game .coach-dots i.active { background: var(--royal-gold) !important; }
+.pause-overlay-modal { background: #03080dd9 !important; backdrop-filter: blur(6px); }
+.pause-badge { background: #cfb07812 !important; color: var(--royal-gold) !important; border-color: #8a744e !important; border-radius: 2px !important; }
+.pause-title { font-size: clamp(28px, 4vw, 38px); }
+.notify-item, #toast { background: var(--royal-panel) !important; border-radius: 3px !important; color: var(--text); box-shadow: 0 4px 16px #0007 !important; }
+.notify-info { border-color: #a58b5c !important; }
+.notify-warning { border-color: #d2ae66 !important; }
+.notify-urgent { border-color: #bd7278 !important; }
+.dragon-targeting-banner, .offline-notice-banner {
+  background: linear-gradient(135deg, #302124, #15151b);
+  border-color: #ad7a6a;
+  border-radius: 3px;
+  box-shadow: var(--royal-frame);
+}
+.dragon-targeting-actions button { border-radius: 2px; }
+.confirm-dragon-btn { background: linear-gradient(#62392c, #38241f); border-color: #c19973; color: var(--royal-light); }
+.confirm-dragon-btn:hover { background: #62392c; box-shadow: var(--royal-bevel); }
+.cancel-dragon-btn { background: var(--royal-button); border-color: var(--royal-steel); }
+
+/* Long translated unit names must fit without horizontal modal scrolling. */
+.arcade-dialog .unit-stats-row { flex-wrap: wrap; }
+.arcade-dialog .train-type-btn { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 380px) {
+  #trainTroopGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+/* Destructive actions and warnings stay red, distinct from gold progression. */
+.arcade-dialog :is(#settingsReturnMenuBtn, #confirmMenuYesBtn, #careerResetBtn,
+  #lobbyLeaveBtn, #actionConfirmAccept), .danger-pause-btn {
+  background: linear-gradient(180deg, #392529, #21171c) !important;
+  border: 1px solid #95656a !important;
+  color: #e9bcc0 !important;
+  box-shadow: var(--royal-bevel) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-dialog, .arcade-dialog::backdrop, .pause-card { animation: none !important; }
+}
+
+.mgmt-buff-description { margin: 0; color: var(--royal-light); font: 500 13px/1.5 var(--font-ui); }
+.mgmt-buff-scope { color: var(--royal-gold); font: 600 11px/1.4 var(--font-ui); }
+.mgmt-buff-hint { margin: 4px 0 0; padding-top: 8px; border-top: 1px solid #43515b; color: var(--royal-muted); font: 500 11px/1.5 var(--font-ui); }

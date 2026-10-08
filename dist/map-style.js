@@ -20,15 +20,26 @@
   const biome=s=>biomes[s.mapIndex]||biomes[0];
   const rgb=h=>h.match(/\w\w/g).map(v=>parseInt(v,16));
   const terrainPlates = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  // Lossless exports keep the original geometry and pixels; hashes invalidate browser caches.
+  const terrainAssets = {
+    0:'terrain_0.webp',
+    1:'terrain-premium-1.95b18c54c93f.webp',
+    2:'terrain-premium-2.8d94331e2a6a.webp',
+    3:'terrain-premium-3.c3ff28339bfa.webp',
+    4:'terrain-premium-4.1a245dd3f4ce.webp',
+    5:'terrain-premium-5.2f5596c093bd.webp',
+    6:'terrain-premium-6-v3.03f7bb840b20.webp',
+    7:'terrain-premium-7.0c72479e0e67.webp',
+    8:'terrain-premium-8.911e798b04c4.webp',
+    9:'terrain-premium-9-v2.f2d02947c97a.webp',
+    10:'terrain-premium-10-v2.5daaea9fc161.webp'
+  };
   function hasTerrainPlate(idx){ return terrainPlates.has(Number(idx)); }
 
   function terrain(s){
     const key = s.mapIndex || 0;
-    if (key === 6) return '/assets/battlefield/terrain-premium-6-v3.png';
-    if ([9,10].includes(key)) return `/assets/battlefield/terrain-premium-${key}-v2.png`;
-    if (key >= 1 && key <= 10) return `/assets/battlefield/terrain-premium-${key}.png`;
-    if (key === 0) return `/assets/battlefield/terrain_0.webp`;
-    if (hasTerrainPlate(key)) return `/assets/battlefield/terrain_${key}.webp`;
+    if (terrainAssets[key]) return `assets/battlefield/${terrainAssets[key]}`;
+    if (hasTerrainPlate(key)) return `assets/battlefield/terrain_${key}.webp`;
     if (textures.has(key)) return textures.get(key);
     const canvas = document.createElement('canvas'); canvas.width = 1100; canvas.height = 750;
     const ctx = canvas.getContext('2d');
@@ -349,7 +360,7 @@
   function foundation(s,c) {
     const a=CrownAnchors.node(s,c), {rx,ry}=a.footprint;
     const variant = s.mapIndex === 6 ? 2 : [1,2,7,10].includes(s.mapIndex) ? 3 : s.mapIndex === 5 ? 1 : 0;
-    const support=shorelineSites[s.mapIndex]?.includes(c.id) ? `<image class="terrain-foundation" href="/assets/battlefield/foundation-${variant}.webp" x="${-rx-14}" y="${-ry-10}" width="${rx*2+28}" height="${ry*2+26}" preserveAspectRatio="none"/>` : '';
+    const support=shorelineSites[s.mapIndex]?.includes(c.id) ? `<image class="terrain-foundation" href="assets/battlefield/foundation-${variant}.webp" x="${-rx-14}" y="${-ry-10}" width="${rx*2+28}" height="${ry*2+26}" preserveAspectRatio="none"/>` : '';
     const shadowDx = 6, shadowDy = 2;
     
     let apronPath = '', rutsPath = '';
@@ -414,7 +425,7 @@
     const a = CrownAnchors.structure(type, epoch);
     const asset = epoch === '17th' ? `castle_${type}` : `${epoch}-${type}`;
     return `<g class="castle-model epoch-${epoch} role-${type}">
-      <image class="castle-sprite-img" href="/assets/battlefield/${asset}.webp" x="${a.sprite.x}" y="${a.sprite.y}" width="${a.w}" height="${a.h}" preserveAspectRatio="none"/>
+      <image class="castle-sprite-img" href="assets/battlefield/${asset}.webp" x="${a.sprite.x}" y="${a.sprite.y}" width="${a.w}" height="${a.h}" preserveAspectRatio="none"/>
       <g class="castle-banner-group" transform="translate(${a.flag.x} ${a.flag.y})">
         <path d="M0 5V-30" stroke="#b5ad96" stroke-width="2"/>
         <path class="faction-flag" d="M1-29 Q13-33 30-27 L27-8 Q14-15 1-11 Z" stroke="#111a22" stroke-width="1.5"/>

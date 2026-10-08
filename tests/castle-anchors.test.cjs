@@ -5,7 +5,7 @@ const out='artifacts/crownfall-mobile';fs.mkdirSync(`${out}/audit`,{recursive:tr
  const p=await b.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  p.on('pageerror',e=>errors.push(e.message));p.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`)});
  await p.addInitScript(()=>localStorage.setItem('crownfall-tour','done'));
- await p.emulateMedia({reducedMotion:'reduce'});await p.goto('http://localhost:4173');
+ await p.emulateMedia({reducedMotion:'reduce'});await p.goto(process.env.CROWNFALL_URL || 'http://localhost:4173');
  await p.evaluate(()=>{CrownI18n.setLanguage('en');enterGameMode();matchActive=false;});
  await p.evaluate(()=>document.fonts.ready);
  for(let map=0;map<11;map++){

@@ -29,7 +29,7 @@ const h=harness(),{window,run,$}=h;
 const click=id=>$(id).dispatchEvent(new window.MouseEvent('click',{bubbles:true}));
 const change=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new window.Event('change',{bubbles:true}));};
 let count=0;const test=(name,f)=>{f();assert.deepEqual(h.errors,[]);console.log('PASS '+name);count++};
-const fresh=()=>run("document.querySelectorAll('dialog[open]').forEach(d=>d.close());multiplayerMode=false;myRole='blue';matchActive=true;state=E.create(42);state.aiDisabled=true;sourceId=0;targetId=null;nextSpecialty=null;allCastles=false;dispatchPercent=50;V.init(state);enterGameMode();updateUI()");
+const fresh=()=>run("document.querySelectorAll('dialog[open]').forEach(d=>d.close());multiplayerMode=false;myRole='blue';matchActive=true;state=E.create(42);state.aiDisabled=true;sourceId=0;targetId=null;nextSpecialty=null;allCastles=false;dispatchPercent=50;marchRoute='fast';V.init(state);enterGameMode();updateUI()");
 
 test('shipped script order boots into the main menu without errors',()=>{assert.equal(window.document.querySelectorAll('.castle').length,21);assert.ok(window.document.body.classList.contains('in-menu'));assert.equal($('troops').textContent,'420')});
 test('new players explicitly select a hero before starting',()=>{click('menuSinglePlayBtn');assert.equal($('startGameBtn').disabled,true);assert.match($('spHeroSelectedStatus').textContent,/No commander/);assert.equal(window.document.querySelector('#spHeroPickGrid .hero-card').tagName,'BUTTON')});
@@ -39,7 +39,15 @@ test('explicit dispatch spends only the selected local amount',()=>{click('dispa
 test('zero available troops disables dispatch with an explanation',()=>{run('state.castles[0].reserve=999;updateUI()');assert.equal($('dispatchActionBtn').disabled,true);assert.match($('dispatchReason').textContent,/No troops/)});
 test('upgrade previews and selected specialization match the purchase',()=>{fresh();click('tacticsBtn');change('tacticsSpecialty','economy');assert.match($('upgradePreview').textContent,/3 → 2.5/);click('closeTactics');click('upgradeBtn');assert.equal(run('state.castles[0].level'),2);assert.equal(run('state.castles[0].specialty'),'economy');assert.equal(run('state.players.blue.gold'),100);click('upgradeBtn');assert.equal(run('state.castles[0].level'),2)});
 test('friendly selection and Shift-click reinforcement are distinct',()=>{fresh();run("state.castles[2].owner='blue';updateUI();V.render(state,null,0)");$('castle2').dispatchEvent(new window.MouseEvent('click',{bubbles:true,shiftKey:true}));assert.equal(run('sourceId'),0);assert.equal(run('targetId'),2);assert.equal(run('state.armies.length'),0);click('dispatchActionBtn');assert.equal(run('state.armies[0].target'),2)});
-test('Tab keeps normal focus navigation; C cycles sources',()=>{const e=new window.KeyboardEvent('keydown',{key:'Tab',code:'Tab',bubbles:true,cancelable:true});window.dispatchEvent(e);assert.equal(e.defaultPrevented,false);window.dispatchEvent(new window.KeyboardEvent('keydown',{key:'c',code:'KeyC'}));assert.equal(run('sourceId'),2)});
+test('Tab toggles management; Shift+Tab and dialog Tab keep navigation; C cycles castles',()=>{
+  fresh();run("state.castles[2].owner='blue';document.activeElement?.blur()");
+  const key=(options)=>{const e=new window.KeyboardEvent('keydown',{key:'Tab',code:'Tab',bubbles:true,cancelable:true,...options});window.dispatchEvent(e);return e};
+  assert.equal(key().defaultPrevented,true);assert.equal(run('castleMgmtOpen'),true);
+  assert.equal(key().defaultPrevented,true);assert.equal(run('castleMgmtOpen'),false);
+  assert.equal(key({shiftKey:true}).defaultPrevented,false);
+  click('menuBtn');assert.equal(key().defaultPrevented,false);click('closeMenu');
+  window.dispatchEvent(new window.KeyboardEvent('keydown',{key:'c',code:'KeyC'}));assert.equal(run('sourceId'),2);
+});
 test('keyboard activation selects a castle before dispatch',()=>{fresh();$('castle15').dispatchEvent(new window.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));assert.equal(run('targetId'),15);assert.equal(run('state.armies.length'),0)});
 test('cancelled drags cannot send an army',()=>{fresh();run('dragFrom=0;isDragging=true');$('map').dispatchEvent(new window.PointerEvent('pointercancel',{pointerId:1}));assert.equal(run('state.armies.length'),0);assert.equal(run('dragFrom'),null);run('dragJustEnded=false')});
 test('changing difficulty preserves the match and Gold',()=>{fresh();run('state.time=20;state.players.blue.gold=77');click('diffBadgeBtn');run("syncDiffModal('hard')");click('startGameBtn');assert.equal(run('state.time'),20);assert.equal(run('state.players.blue.gold'),77);assert.equal(run('state.aiDifficulty'),'hard');assert.equal(run('state.paused'),true)});
@@ -92,14 +100,11 @@ test('disconnected multiplayer disables attacks and upgrades',()=>{
   fresh();run("multiplayerMode=true;wsClient={readyState:3};targetId=15;updateUI()");assert.equal($('dispatchActionBtn').disabled,true);assert.equal($('upgradeBtn').disabled,true);assert.match($('dispatchReason').textContent,/Connection lost/);
 });
 test('normal players do not see developer sandbox controls',()=>{assert.ok($('sandboxActions').classList.contains('hidden'))});
-test('troop recruitment bar renders counts and opens training modal on tap',()=>{
-  fresh();
-  assert.ok($('countSoldier').textContent.length > 0);
-  assert.ok($('troopArcherBtn').classList.contains('locked'));
-  click('troopSoldierBtn');
-  assert.equal($('trainingDialog').open, true);
-  click('closeTrainingDialog');
-  assert.equal($('trainingDialog').open, false);
+test('management shows castle buffs and recruitment controls are absent',()=>{
+  fresh();run("state.castles[0].type='knight';updateUI()");click('moreCommandsBtn');
+  assert.match($('mgmtBuffDescription').textContent,/25%.*20%/);
+  for(const id of ['trainingDialog','quickRecruit100Btn','troopBar','troopSoldierBtn','openTrainingFromMgmtBtn'])assert.equal($(id),null);
+  click('closeCastleMgmtBtn');
 });
 test('dragon strike targeting overlay opens and can be cancelled',()=>{
   fresh();
@@ -146,45 +151,27 @@ test('historical Napoleonic and Orient maps load and display properly',()=>{
   assert.equal(run("state.mapIndex"), 10);
   assert.equal(run("state.playerCount"), 3);
 });
-test('castle and marching composition show all unit types and update after losses',()=>{
-  fresh();
-  run("state.castles[0].units={soldier:100,archer:80,knight:60,cavalry:40};state.castles[0].troops=280;targetId=1;updateUI();V.setQuality('high');V.render(state,1,0)");
-  assert.match($('sourceComposition').textContent,/Rifle Skirmisher 80/);
-  assert.match($('composition0').textContent,/80/);
+test('castle and marching labels show a single troop count after losses',()=>{
+  fresh();run("state.castles[0].troops=280;targetId=1;updateUI();V.setQuality('high');V.render(state,1,0)");
+  assert.match($('sourceComposition').textContent,/280/);assert.match($('composition0').textContent,/280/);
   run("E.dispatch(state,'blue',0,1,280);V.render(state,1,0)");
-  assert.equal(new Set([...window.document.querySelectorAll('.marcher')].map(n=>n.dataset.unitType)).size,4);
-  assert.match(window.document.querySelector('.army-composition').textContent,/80/);
-  run("state.armies[0].units.archer=0;state.armies[0].count-=80;V.render(state,1,0)");
-  assert.equal(window.document.querySelectorAll('.marcher[data-unit-type=archer]').length,0);
-  run("V.setQuality('low');V.render(state,1,0)");
-  assert.match(window.document.querySelector('.army-composition').textContent,/60/);
+  assert.equal(new Set([...window.document.querySelectorAll('.marcher')].map(n=>n.dataset.unitType)).size,1);
+  assert.match(window.document.querySelector('.army-composition').textContent,/280/);
+  run("state.armies[0].count-=80;V.setQuality('low');V.render(state,1,0)");
+  assert.match(window.document.querySelector('.army-composition').textContent,/200/);
 });
-test('battle sides show current types and enemy armies can be inspected without recall',()=>{
-  fresh();
-  run("E.dispatch(state,'blue',0,1,100);E.dispatch(state,'red',1,0,100);state.armies[0].units={archer:100};state.armies[1].units={cavalry:100};state.armies.forEach(a=>a.inBattle=true);state.battles=[{id:1,x:500,y:500,armies:state.armies.map(a=>a.id),powerRatio:{blue:.5,red:.5}}];updateUI();V.render(state,1,0)");
-  assert.match($('unitBattlePanel').textContent,/Rifle Skirmisher 100/);
-  assert.match($('unitBattlePanel').textContent,/Cavalry 100/);
+test('battle sides show troop totals and enemy armies cannot be recalled',()=>{
+  fresh();run("E.dispatch(state,'blue',0,1,100);E.dispatch(state,'red',1,0,90);E.engageBattle(state,state.armies);updateUI();V.render(state,1,0)");
+  assert.match($('unitBattlePanel').textContent,/100/);assert.match($('unitBattlePanel').textContent,/90/);
   assert.equal(window.document.querySelectorAll('.battle-composition').length,2);
-  run("openArmyRecallDialog(state.armies[1])");
-  assert.equal($('recallCountCavalry').textContent,'100');
-  assert.equal($('armyRecallActionBtn').disabled,true);
-  run("state.armies[1].inBattle=false;openArmyRecallDialog(state.armies[1])");
-  assert.equal($('armyRecallActionBtn').disabled,true);
-  run("state.battles=[];updateUI()");
-  assert.ok($('unitBattlePanel').classList.contains('hidden'));
+  run("openArmyRecallDialog(state.armies[1])");assert.equal($('armyRecallTotal').textContent,'90');assert.equal($('armyRecallActionBtn').disabled,true);
+  run("state.armies[1].inBattle=false;openArmyRecallDialog(state.armies[1])");assert.equal($('armyRecallActionBtn').disabled,true);
+  run("state.battles=[];updateUI()");assert.ok($('unitBattlePanel').classList.contains('hidden'));
 });
-test('quick recruit +100 troops rejects when gold is insufficient and disables button',()=>{
-  run("state.players.blue.gold=50;sourceId=0;updateUI()");
-  assert.equal($('quickRecruit100Btn').disabled,true);
-  const initialTroops = window.state.castles[0].troops;
-  run("executeQuickRecruit(100)");
-  assert.equal(window.state.players.blue.gold,50);
-  assert.equal(window.state.castles[0].troops,initialTroops);
-  run("state.players.blue.gold=100;updateUI()");
-  assert.equal($('quickRecruit100Btn').disabled,false);
-  run("executeQuickRecruit(100)");
-  assert.equal(window.state.players.blue.gold,0);
-  assert.equal(window.state.castles[0].troops,initialTroops+100);
+test('R without an army never buys or creates troops',()=>{
+  fresh();const troops=run('state.castles[0].troops'),gold=run('state.players.blue.gold');
+  window.dispatchEvent(new window.KeyboardEvent('keydown',{key:'r',code:'KeyR'}));
+  assert.equal(run('state.castles[0].troops'),troops);assert.equal(run('state.players.blue.gold'),gold);
 });
 test('all shipped UI translation keys exist in all supported languages',()=>{
   for(const lang of ['en','ru','uz'])for(const element of window.document.querySelectorAll('[data-i18n],[data-i18n-html],[data-i18n-placeholder]')) {
@@ -192,5 +179,15 @@ test('all shipped UI translation keys exist in all supported languages',()=>{
     assert.notEqual(window.CrownI18n.TRANSLATIONS[lang][key],undefined,`${lang}: ${key}`);
   }
 });
+test('snapshot parsing retains transmitted effects and leaves the packet unchanged',()=>{fresh();run("multiplayerMode=true;currentRoomCode='AUDIT';lastNetworkRevision=-1;const packet=E.create(42);packet.effects=[{x:500,y:500,text:'CAPTURED',owner:'blue',life:1.8}];window.auditPacket=packet;applySnapshot({roomCode:'AUDIT',revision:1,state:packet},true)");assert.equal(run('state.effects.length'),1);assert.equal(run('window.auditPacket.effects.length'),1);});
+test('siege preview applies defense and assault castle buffs',()=>{fresh();run("state.castles[2].type='small';state.castles[2].troops=100;state.castles[0].troops=110;targetId=2;dispatchPercent=100;updateUI()");assert.match($('battleForecast').textContent,/High risk/);run("state.castles[2].type='gold';state.castles[2].troops=110;state.castles[0].troops=100;state.castles[0].type='knight';updateUI()");assert.match($('battleForecast').textContent,/Advantage/);assert.match($('battleForecast').textContent,/8/);});
+test('mobility castle speed preview matches dispatch without troop types',()=>{fresh();run("state.castles[0].type='cavalry';window.auditSpeed=routeSpeedFor(state.castles[0]);window.auditArmy=E.dispatch(state,'blue',0,1,100)");assert.equal(run('window.auditSpeed'),106.25);assert.equal(run('window.auditArmy.speed'),106.25);});
+test('career result is counted once after repeated UI refresh and loading a finished save',()=>{fresh();run("CrownCareer.resetStats();state.result='blue';updateUI();window.auditSave=E.serialize(state);$('resultDialog').close();updateUI();$('resultDialog').close();state=E.deserialize(window.auditSave);updateUI()");assert.equal(run('CrownCareer.loadStats().battles'),1);assert.equal(run('CrownCareer.loadStats().wins'),1);});
+test('loser does not receive conquest and a draw is not a defeat',()=>{fresh();run("CrownCareer.resetStats();state.castles.forEach(c=>c.owner='red');state.result='red';updateUI()");assert.equal(run('CrownCareer.loadStats().hasGrandConquest'),false);fresh();run("state.result='draw';updateUI()");assert.equal(run('CrownCareer.loadStats().draws'),1);assert.equal(run('CrownCareer.loadStats().losses'),1);});
+test('result records inflicted casualties and earned gold instead of own losses and balance',()=>{fresh();run("CrownCareer.resetStats();state.stats.blue.attackLosses=17;state.stats.blue.casualtiesInflicted=100;state.stats.blue.goldEarned=12;state.players.blue.gold=900;state.result='blue';updateUI()");assert.equal(run('CrownCareer.loadStats().casualtiesInflicted'),100);assert.equal(run('CrownCareer.loadStats().goldAmassed'),12);});
+test('settings changes the running bot style',()=>{fresh();change('aiStyle','economist');assert.equal(run('state.players.red.aiStyle'),'economist');});
+test('online interpolation leaves army time stationary during battle',()=>{fresh();run("multiplayerMode=true;const a=E.dispatch(state,'blue',0,1,100),b=E.dispatch(state,'red',1,0,100);E.engageBattle(state,[a,b]);last=1000;frame(1100)");assert.equal(run('state.armies[0].t'),0);});
+test('dragon reticle and strike reach the full map and show the real damage radius',()=>{fresh();run("state.castles[2].owner=state.castles[4].owner='blue';state.time=40;state.players.blue.gold=1000");click('dragonStrikeBtn');run('dragonTargetPos={x:2190,y:1490};renderDragonReticle(2190,1490)');assert.equal($('dragonReticle').querySelector('circle').getAttribute('r'),'190');assert.equal(run('executeDragonStrike(2190,1490)'),true);assert.equal(run('state.dragonStrike.x'),2190);assert.equal(run('state.dragonStrike.y'),1490);assert.equal(run('dragonTargeting'),false);});
+test('failed online dragon submission keeps targeting and does not spend gold',()=>{fresh();run("state.castles[2].owner=state.castles[4].owner='blue';state.time=40;state.players.blue.gold=1000;dragonTargeting=true;multiplayerMode=true;wsClient={readyState:3}");assert.equal(run('executeDragonStrike(1800,1300)'),false);assert.equal(run('dragonTargeting'),true);assert.equal(run('state.players.blue.gold'),1000);run('cancelDragonStrike()');});
 console.log(`${count} interface tests passed`);
 await window.happyDOM.abort();

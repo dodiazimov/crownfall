@@ -1,21 +1,16 @@
 (function(root){
 'use strict';
-const VERSION=4, SPEED=85, CONTACT=12, MAX_RESOURCE=1e12;
+const VERSION=5, SPEED=85, CONTACT=12, MAX_RESOURCE=1e12;
+const MAP_BOUNDS=Object.freeze({minX:0,maxX:2200,minY:0,maxY:1500});
+const clampMapPoint=p=>({x:clamp(p.x,MAP_BOUNDS.minX,MAP_BOUNDS.maxX),y:clamp(p.y,MAP_BOUNDS.minY,MAP_BOUNDS.maxY)});
 const MAX_CASTLE_LEVEL=5, UPGRADE_COSTS=Object.freeze([100,220,400,650]);
 const addResource=(a,b)=>Math.min(MAX_RESOURCE,a+b);
-const TYPES={main:{name:'Main Castle',color:'#359ef5',def:420},gold:{name:'Gold Castle',color:'#ecba35',def:100},troop:{name:'Troop Castle',color:'#56a56c',def:120},archer:{name:'Archer Tower',color:'#74c3b2',def:150},knight:{name:'Knight Castle',color:'#d95c6d',def:220},elite:{name:'Elite Citadel',color:'#a66ade',def:450},small:{name:'Watch Keep',color:'#bdc6b9',def:50},cavalry:{name:'Cavalry Keep',color:'#e67e22',def:180}};
-const UNITS={
-  soldier:{id:'soldier',name:'Infantry',power:1.0,hp:100,damage:24,critChance:0.05,critMult:1.5,speedMod:1.0,armor:0,cost:10,time:4.0,desc:'Main army body. Medium HP and damage. Effective in mass vs Cavalry.'},
-  archer:{id:'archer',name:'Archer',power:1.4,hp:75,damage:32,critChance:0.20,critMult:2.0,speedMod:0.95,armor:0,cost:18,time:6.0,desc:'High ranged damage and crits. Fires pre-emptive volleys. Strong vs Infantry, weak vs Cavalry.'},
-  knight:{id:'knight',name:'Knight',power:2.0,hp:160,damage:38,critChance:0.10,critMult:1.5,speedMod:0.90,armor:0.18,cost:35,time:9.0,desc:'Heavy armored elite melee. High survivability and siege power. Counters Infantry and holds against Cavalry.'},
-  cavalry:{id:'cavalry',name:'Cavalry',power:1.75,hp:130,damage:40,critChance:0.15,critMult:1.75,speedMod:1.35,armor:0.08,chargeBonus:1.4,cost:30,time:8.0,desc:'Fast shock troops. Devastating charge vs Archers and light Infantry. Vulnerable to massed Infantry pikes.'},
-  elite:{id:'elite',name:'Mage',power:2.5,hp:150,damage:55,critChance:0.25,critMult:2.0,speedMod:1.0,armor:0.05,cost:50,time:12.0,desc:'Arcane siege power.'}
-};
+const TYPES={main:{name:'Main Castle',color:'#359ef5',def:420},gold:{name:'Gold Castle',color:'#ecba35',def:100},troop:{name:'Troop Castle',color:'#56a56c',def:120},archer:{name:'Defense Tower',color:'#74c3b2',def:150},knight:{name:'Assault Keep',color:'#d95c6d',def:220},elite:{name:'Elite Citadel',color:'#a66ade',def:450},small:{name:'Watch Keep',color:'#bdc6b9',def:50},cavalry:{name:'Mobility Keep',color:'#e67e22',def:180}};
 const EPOCHS={
-  '17th':{id:'17th',name:'17th Century',period:'1600s · Early Modern',desc:'Pike & Shot era with stone keeps, arquebusiers, armored pikemen and mud trails',units:{soldier:{id:'soldier',name:'Foot Soldier',role:'Infantry',desc:'Main infantry body armed with musket and rapier.'},archer:{id:'archer',name:'Arquebusier',role:'Ranged',desc:'Sharp volley marksmen with early firearms.'},knight:{id:'knight',name:'Armored Pikeman',role:'Heavy',desc:'Heavy pike brigade impervious to frontal cavalry.'},cavalry:{id:'cavalry',name:'Royal Cavalry',role:'Fast',desc:'Swift mounted shock troops.'}},castles:{main:'Stone Keep',troop:'Garrison Hold',archer:'Watch Tower',knight:'Knight Keep',cavalry:'Stable Castle',gold:'Merchant Keep',elite:'Grand Citadel',small:'Watch Post'}},
-  '18th':{id:'18th',name:'18th Century',period:'1700s · Age of Reason',desc:'Star fortresses, line infantry, rifle skirmishers, and gravel military roads',units:{soldier:{id:'soldier',name:'Line Infantry',role:'Infantry',desc:'Drilled musketeers fighting in tight disciplined lines.'},archer:{id:'archer',name:'Rifle Skirmisher',role:'Ranged',desc:'Sharpshooters with rifled muskets and superior range.'},knight:{id:'knight',name:'Grenadier Guard',role:'Heavy',desc:'Elite shock troops equipped with explosives.'},cavalry:{id:'cavalry',name:'Hussar Cavalry',role:'Fast',desc:'Fast light cavalry with curved sabres.'}},castles:{main:'Garrison Fort',troop:'Barracks Fort',archer:'Gun Fort',knight:'Heavy Barracks',cavalry:'Cavalry Depot',gold:'Trade Center',elite:'Star Fortress',small:'Picket Redoubt'}},
-  '19th':{id:'19th',name:'19th Century',period:'1800s · Industrial Age',desc:'Industrial strongholds, breechloaders, artillery batteries, and cobbled highways',units:{soldier:{id:'soldier',name:'Regular Infantry',role:'Infantry',desc:'Industrial rifle brigades with high firepower.'},archer:{id:'archer',name:'Rifle Marksman',role:'Ranged',desc:'Long-range snipers with precision optics.'},knight:{id:'knight',name:'Imperial Guard',role:'Heavy',desc:'Armored shock troops and siege specialists.'},cavalry:{id:'cavalry',name:'Dragoon Corps',role:'Fast',desc:'Mounted rapid response division.'}},castles:{main:'Military Fort',troop:'Arsenal Depot',archer:'Artillery Battery',knight:'Fortified Garrison',cavalry:'Mounted Depot',gold:'Industrial Stronghold',elite:'Grand Fortress',small:'Telegraph Outpost'}},
-  '20th':{id:'20th',name:'20th Century',period:'1900s · Modern Warfare',desc:'Concrete bunkers, trench warfare, fire support teams, and motorized transport',units:{soldier:{id:'soldier',name:'Frontline Infantry',role:'Infantry',desc:'Combat troops with rapid-fire rifles and steel helmets.'},archer:{id:'archer',name:'Fire Support Squad',role:'Ranged',desc:'Heavy machine guns and mortar gunners.'},knight:{id:'knight',name:'Bunker Stormers',role:'Heavy',desc:'Armored assault troops with ballistic shields.'},cavalry:{id:'cavalry',name:'Motorized Unit',role:'Fast',desc:'Mechanized mobile reconnaissance unit.'}},castles:{main:'Military Outpost',troop:'Troop Base',archer:'Fire Support Base',knight:'Bunker Complex',cavalry:'Motorized Depot',gold:'Supply Hub',elite:'Command HQ',small:'Radar Sentry'}}
+  '17th':{id:'17th',name:'17th Century',period:'1600s · Early Modern',desc:'Pike & Shot era with stone keeps, arquebusiers, armored pikemen and mud trails',castles:{main:'Stone Keep',troop:'Garrison Hold',archer:'Defense Tower',knight:'Assault Keep',cavalry:'Mobility Keep',gold:'Merchant Keep',elite:'Grand Citadel',small:'Watch Post'}},
+  '18th':{id:'18th',name:'18th Century',period:'1700s · Age of Reason',desc:'Star fortresses, line infantry, rifle skirmishers, and gravel military roads',castles:{main:'Garrison Fort',troop:'Barracks Fort',archer:'Gun Fort',knight:'Heavy Barracks',cavalry:'Cavalry Depot',gold:'Trade Center',elite:'Star Fortress',small:'Picket Redoubt'}},
+  '19th':{id:'19th',name:'19th Century',period:'1800s · Industrial Age',desc:'Industrial strongholds, breechloaders, artillery batteries, and cobbled highways',castles:{main:'Military Fort',troop:'Arsenal Depot',archer:'Artillery Battery',knight:'Fortified Garrison',cavalry:'Mounted Depot',gold:'Industrial Stronghold',elite:'Grand Fortress',small:'Telegraph Outpost'}},
+  '20th':{id:'20th',name:'20th Century',period:'1900s · Modern Warfare',desc:'Concrete bunkers, trench warfare, fire support teams, and motorized transport',castles:{main:'Military Outpost',troop:'Troop Base',archer:'Fire Support Base',knight:'Bunker Complex',cavalry:'Motorized Depot',gold:'Supply Hub',elite:'Command HQ',small:'Radar Sentry'}}
 };
 const ERAS=EPOCHS;
 const REGIONS={
@@ -23,7 +18,6 @@ const REGIONS={
   asia:{id:'asia',name:'Asia',desc:'Dynastic palaces, Great Wall fortifications, and ancient silk passes.'},
   americas:{id:'americas',name:'Americas',desc:'Coastal archipelagos, frontier forts, and hemispheric crossroads.'}
 };
-function getTroopRoleInfo(epochId,roleId){const ep=EPOCHS[epochId]||EPOCHS['18th'];return ep.units[roleId]||ep.units.soldier;}
 function getCastleRoleName(epochId,type){const ep=EPOCHS[epochId]||EPOCHS['18th'];return ep.castles[type]||TYPES[type]?.name||type;}
 
 const NODE_CATEGORIES = {
@@ -36,11 +30,11 @@ const NODE_CATEGORIES = {
     themeColor: '#d4b35f',
     baseYield: '+1.0 🪙/s',
     buffTitle: 'Treasury Wealth',
-    buffDesc: 'High gold yield (+4-11 🪙/s); finances rapid troop recruitment, upgrades, and fortifications.',
+    buffDesc: 'High gold yield (+4-22 🪙/s); finances upgrades and fortifications.',
     buffShort: '+1.0 🪙/s · Gold',
     scope: 'Faction Economy',
     tag: 'ECONOMY',
-    tip: 'Secure early to finance castle upgrades and troop queues.'
+    tip: 'Secure early to finance castle upgrades.'
   },
   troop: {
     id: 'troop',
@@ -51,7 +45,7 @@ const NODE_CATEGORIES = {
     themeColor: '#5fa879',
     baseYield: '+4.0 ⚔/s',
     buffTitle: 'Mass Conscription',
-    buffDesc: 'High troop replenishment (+4-11 ⚔/s); continuous frontline manpower.',
+    buffDesc: 'High troop replenishment (+4-22 ⚔/s); continuous frontline manpower.',
     buffShort: '+4.0 ⚔/s · Troop',
     scope: 'Local Garrison',
     tag: 'MANPOWER',
@@ -66,7 +60,7 @@ const NODE_CATEGORIES = {
     themeColor: '#5c9dc4',
     baseYield: '+1.0 ⚔/s',
     buffTitle: 'Bastion Redoubt',
-    buffDesc: '+15% defense resistance to connected allied castles; defensive archer volley on attackers.',
+    buffDesc: '+15% local defense at Defense Towers; Watch Keeps grant +20% local defense and +15% defense to nearby allied castles.',
     buffShort: '+15% DEF · Aura',
     scope: 'Connected Allies',
     tag: 'DEFENSE',
@@ -81,8 +75,8 @@ const NODE_CATEGORIES = {
     themeColor: '#c75d65',
     baseYield: '+2.0 ⚔/s',
     buffTitle: 'Heavy Siege & Assault',
-    buffDesc: '+15% assault power for departing armies; unlocks and trains armored Knights.',
-    buffShort: '+15% ATK · Siege',
+    buffDesc: '+25% march speed and +20% siege strength for departing armies.',
+    buffShort: '+25% SPD · +20% ATK',
     scope: 'Departing Armies',
     tag: 'ASSAULT',
     tip: 'Offensive staging ground. Launch assaults from here to smash enemy garrisons.'
@@ -96,7 +90,7 @@ const NODE_CATEGORIES = {
     themeColor: '#d98b48',
     baseYield: '+2.0 ⚔/s',
     buffTitle: 'Swift March & Mobility',
-    buffDesc: '+25% march speed on departing routes; unlocks and trains rapid Cavalry shock units.',
+    buffDesc: '+25% march speed for departing armies.',
     buffShort: '+25% SPD · Swift',
     scope: 'Departing Routes',
     tag: 'MOBILITY',
@@ -111,9 +105,9 @@ const NODE_CATEGORIES = {
     themeColor: '#b58ae0',
     baseYield: '+3.0 ⚔/s · +1.0 🪙/s',
     buffTitle: 'Imperial Dominion',
-    buffDesc: 'Faction headquarters and victory core; provides +1.0 ⚔/s global aura to all owned keeps.',
+    buffDesc: 'Faction headquarters and victory core; provides +1.0 ⚔/s to its own garrison.',
     buffShort: '👑 Capital Core',
-    scope: 'Global Faction',
+    scope: 'Local Garrison',
     tag: 'VICTORY CORE',
     tip: 'Highest strategic priority. Defend your capital and seize the center for victory.'
   }
@@ -152,32 +146,32 @@ function getCastleStrategicInfo(castle, epochId = '18th', s = null) {
   if (castle.type === 'gold') {
     shortYield = `+${inc.gold.toFixed(0)} 🪙/s`;
     specificYield = `+${inc.gold.toFixed(1)} 🪙/s (Gold) · +${inc.troops.toFixed(1)} ⚔/s`;
-    specificBuff = 'Treasury Wealth: High gold yield (+4-11 🪙/s); finances army upgrades and emergency recruitment.';
+    specificBuff = 'Treasury Wealth: High gold yield (+4-22 🪙/s); finances castle upgrades.';
     tacticalAdvice = 'High economic value. Seize to build a decisive technological and numerical lead.';
   } else if (castle.type === 'troop') {
     shortYield = `+${inc.troops.toFixed(0)} ⚔/s`;
     specificYield = `+${inc.troops.toFixed(1)} ⚔/s (Troops) · +${inc.gold.toFixed(1)} 🪙/s`;
-    specificBuff = 'Mass Conscription: Rapid infantry reinforcement hub; feeds frontline armies.';
+    specificBuff = 'Mass Conscription: Faster automatic garrison replenishment; feeds frontline armies.';
     tacticalAdvice = 'Manpower powerhouse. Capture to flood the map with reinforcements.';
   } else if (castle.type === 'archer') {
-    shortYield = '🏹 Volley';
-    specificBuff = `Archer Volley: Fires pre-emptive barrage (−${Math.floor(15 * (castle.level || 1))}% casualties) on incoming attackers; trains Archers.`;
+    shortYield = '+15% DEF';
+    specificBuff = 'Bastion Defense: +15% local garrison defense.';
     tacticalAdvice = 'Deadly defensive strongpoint. Highly resistant to direct frontal assaults.';
   } else if (castle.type === 'small') {
-    shortYield = '+15% DEF';
-    specificBuff = 'Frontier Redoubt: +25% garrison defense; +15% defense aura to connected allied castles.';
+    shortYield = '+20% DEF';
+    specificBuff = 'Frontier Redoubt: +20% garrison defense; +15% defense aura to connected allied castles.';
     tacticalAdvice = 'Key outpost. Capturing fortifies surrounding friendly castles against enemy pushes.';
   } else if (castle.type === 'knight') {
-    shortYield = '+15% ATK';
-    specificBuff = 'Armored Siege Keep: Departing attacks deal +15% assault damage; trains heavy Knights.';
+    shortYield = '+25% SPD';
+    specificBuff = 'Assault Keep: Departing armies march +25% faster and gain +20% siege strength.';
     tacticalAdvice = 'Offensive battering ram. Stage attacks from here to crack fortified enemy citadels.';
   } else if (castle.type === 'cavalry') {
     shortYield = '+25% SPD';
-    specificBuff = 'Cavalry Stables: Departing armies gain Swift March (+25% speed); trains fast Cavalry.';
+    specificBuff = 'Mobility Keep: Departing armies gain Swift March (+25% speed).';
     tacticalAdvice = 'Strategic mobility pivot. Enables rapid reinforcement and sudden flank attacks.';
   } else if (castle.type === 'elite') {
     shortYield = '👑 Citadel';
-    specificBuff = 'Grand Citadel: Imperial dominion (+1.0 ⚔/s global aura to all owned keeps) and Crown victory core.';
+    specificBuff = 'Grand Citadel: Imperial dominion (+1.0 ⚔/s to this garrison) and Crown victory core.';
     tacticalAdvice = 'The jewel of the realm. Control to dominate the battlefield and secure victory.';
   } else if (castle.type === 'main') {
     shortYield = '👑 Capital';
@@ -185,6 +179,9 @@ function getCastleStrategicInfo(castle, epochId = '18th', s = null) {
     tacticalAdvice = 'Vital headquarters. Defend at all costs.';
   }
 
+  const text=(key,fallback)=>root.CrownI18n?.TRANSLATIONS?.[root.CrownI18n.getLanguage?.()||'en']?.[key]||fallback;
+  const scopeKey=castle.type==='gold'?'economy':castle.type==='small'?'nearby':['knight','cavalry'].includes(castle.type)?'army':'local';
+  const shortBuff=castle.type==='archer'?'+15% DEF':castle.type==='small'?'+20% DEF · +15% Aura':castle.type==='knight'?'+25% SPD · +20% ATK':category.buffShort;
   return {
     category,
     categoryName: category.name,
@@ -193,10 +190,10 @@ function getCastleStrategicInfo(castle, epochId = '18th', s = null) {
     themeColor: category.themeColor,
     eraName,
     tag: category.tag,
-    scope: category.scope,
+    scope: text(`buff_scope_${scopeKey}`,category.scope),
     buffTitle: category.buffTitle,
-    buffDesc: specificBuff,
-    buffShort: category.buffShort,
+    buffDesc: text(`buff_${castle.type}_desc`,specificBuff),
+    buffShort: shortBuff,
     yieldText: specificYield,
     shortYield,
     tacticalAdvice
@@ -206,7 +203,7 @@ const WEATHER_TYPES={
   clear:{id:'clear',name:'Clear Sky',icon:'☀️',speedMod:1.0,desc:'Ideal conditions'},
   rain:{id:'rain',name:'Heavy Rain',icon:'🌧️',speedMod:0.75,desc:'Muddy roads (-25% speed)'},
   fog:{id:'fog',name:'Dense Fog',icon:'🌫️',speedMod:1.0,flankSpeedMod:1.20,desc:'Mist cover (+20% flank speed)'},
-  snow:{id:'snow',name:'Blizzard',icon:'❄️',speedMod:1.0,volleyMod:0.70,desc:'Blizzard (-30% archer volley)'}
+  snow:{id:'snow',name:'Blizzard',icon:'❄️',speedMod:1.0,desc:'Snowfall across the battlefield'}
 };
 const HEROES={
   vanguard:{id:'vanguard',icon:'🗡️',name:'Al-Muzaffar',role:'Vanguard',speedMod:1.15,combatMod:1.10},
@@ -1688,7 +1685,6 @@ function randomizeCastleTypes(castles,seed){
       if(!castles[id]||castles[id].type==='main'||id<pCount)continue;
       castles[id].type=t;
       castles[id].troops=TYPES[t].def;
-      castles[id].units={soldier:t==='archer'||t==='knight'||t==='cavalry'?0:TYPES[t].def,archer:t==='archer'?TYPES[t].def:0,knight:t==='knight'?TYPES[t].def:0,cavalry:t==='cavalry'?TYPES[t].def:0};
       castles[id].name=getNextName(t);
     }
   }
@@ -1696,7 +1692,6 @@ function randomizeCastleTypes(castles,seed){
   if(castles[15]){
     const centerType='elite';
     castles[15].type=centerType;castles[15].troops=TYPES[centerType].def;
-    castles[15].units={soldier:TYPES[centerType].def,archer:0,knight:0,cavalry:0};
     castles[15].name=getNextName(centerType);
   }
 }
@@ -1711,14 +1706,13 @@ function create(seed=Date.now(),style='balanced',difficulty='normal',mapIndex=0,
  const activeKeys=PLAYER_KEYS.slice(0,pCount);
  const castles=layout.map(([type,name,x,y],id)=>{
    const defTroops=TYPES[type].def;
-   const units={soldier:type==='archer'||type==='knight'||type==='cavalry'?0:defTroops,archer:type==='archer'?defTroops:0,knight:type==='knight'?defTroops:0,cavalry:type==='cavalry'?defTroops:0};
-   return {id,type,name,x,y,mapIndex:mIdx,owner:id<pCount?activeKeys[id]:null,level:1,troops:defTroops,units,carry:0,reserve:0,specialty:'balanced',supply:null,stabilizing:0,scorched:0,trainingQueue:[]};
+   return {id,type,name,x,y,mapIndex:mIdx,owner:id<pCount?activeKeys[id]:null,level:1,troops:defTroops,carry:0,reserve:0,specialty:'balanced',supply:null,stabilizing:0,scorched:0};
  });
  if(mIdx===0){
    for(const [a,b] of [[0,1],[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,16],[17,18],[19,20]]){const dx=(random()-.5)*32,dy=(random()-.5)*32;castles[a].x+=dx;castles[b].x-=dx;castles[a].y+=dy;castles[b].y+=dy;}
  }
  if(randomCastles)randomizeCastleTypes(castles,seed);
- const stat=()=>({produced:0,roadLosses:0,attackLosses:0,defenseLosses:0,captures:0,dispatched:0});
+ const stat=()=>({produced:0,roadLosses:0,attackLosses:0,defenseLosses:0,captures:0,dispatched:0,casualtiesInflicted:0,goldEarned:0});
  const players={}, stats={};
  const botArchetypes=['raider','economist','defender','balanced'];
  for(let i=0;i<pCount;i++){
@@ -1736,51 +1730,29 @@ function create(seed=Date.now(),style='balanced',difficulty='normal',mapIndex=0,
    }
    const heroId=heroes&&heroes[k]?heroes[k]:(heroes?(k==='blue'?'vanguard':(pStyle==='economist'?'guildmaster':pStyle==='defender'?'fortifier':pStyle==='raider'?'infiltrator':'vanguard')):null);
    const startGold=(heroId==='guildmaster')?350:200;
-   players[k]={troops:420,gold:startGold,home:i,unit:'soldier',hero:heroId,aiStyle:pStyle,aiTimer:1.2+i*0.6};
+   players[k]={troops:420,gold:startGold,home:i,hero:heroId,aiStyle:pStyle,aiTimer:1.2+i*0.6};
    stats[k]=stat();
  }
  const weather={type:'clear',timer:45,duration:45,index:0};
- const activeEpoch=EPOCHS[epoch]?epoch:(epoch==='napoleonic'?'18th':(epoch==='medieval'?'17th':'18th'));const activeRegion=REGIONS[region]?region:(mIdx===10?'asia':(mIdx===4||mIdx===8?'americas':'europe'));return{version:VERSION,seed,mapIndex:mIdx,mapName:MAP_NAMES[mIdx],playerCount:pCount,epoch:activeEpoch,region:activeRegion,victoryMode:victoryMode||'crown_control',crownHolder:null,crownHoldTimer:0,randomCastles:!!randomCastles,botPlayers:activeKeys.slice(1),castles,players,stats,armies:[],orders:[],effects:[],events:[],battles:[],dragonStrike:null,dragonCooldowns:{},progressiveCombat:!!progressiveCombat,time:0,aiTimer:8,aiStyle:style,aiDifficulty:difficulty,nextArmy:1,nextOrder:1,nextBattleId:1,nextTrainId:1,paused:false,result:null,resultReason:null,weather};
+ const activeEpoch=EPOCHS[epoch]?epoch:(epoch==='napoleonic'?'18th':(epoch==='medieval'?'17th':'18th'));const activeRegion=REGIONS[region]?region:(mIdx===10?'asia':(mIdx===4||mIdx===8?'americas':'europe'));return{version:VERSION,matchId:globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,seed,mapIndex:mIdx,mapName:MAP_NAMES[mIdx],playerCount:pCount,epoch:activeEpoch,region:activeRegion,victoryMode:victoryMode||'crown_control',crownHolder:null,crownHoldTimer:0,randomCastles:!!randomCastles,botPlayers:activeKeys.slice(1),castles,players,stats,armies:[],orders:[],effects:[],events:[],battles:[],dragonStrike:null,dragonCooldowns:{},progressiveCombat:!!progressiveCombat,time:0,aiTimer:8,aiStyle:style,aiDifficulty:difficulty,nextArmy:1,nextOrder:1,nextBattleId:1,paused:false,result:null,resultReason:null,weather};
 }
 function owned(s,p){return s.castles.filter(c=>c.owner===p)}
 function totals(s,p){
-  const own=owned(s,p);
-  const garrison=own.reduce((n,c)=>n+c.troops,0),marching=s.armies.filter(a=>a.owner===p).reduce((n,a)=>n+a.count,0);
-  const composition={soldier:0,archer:0,knight:0,cavalry:0};
-  for(const c of own){
-    if(c.units){
-      for(const k of ['soldier','archer','knight','cavalry'])composition[k]+=(c.units[k]||0);
-    }else{
-      composition.soldier+=c.troops;
-    }
-  }
-  for(const a of s.armies.filter(a=>a.owner===p)){
-    if(a.units){
-      for(const k of ['soldier','archer','knight','cavalry'])composition[k]+=(a.units[k]||0);
-    }else{
-      composition.soldier+=a.count;
-    }
-  }
-  return{garrison,marching,total:garrison+marching,composition};
+  const garrison=owned(s,p).reduce((n,c)=>n+c.troops,0);
+  const marching=s.armies.filter(a=>a.owner===p).reduce((n,a)=>n+a.count,0);
+  return{garrison,marching,total:garrison+marching};
 }
 function sync(s){for(const p of Object.keys(s.players))s.players[p].troops=totals(s,p).total}
 function incomeFor(c,level=c.level,specialty=c.specialty,hero=null){let troops=RATES[c.type]?RATES[c.type][level-1]:3,gold=c.type==='main'?level:c.type==='gold'?[4,7,11,16,22][level-1]:.25*level;if(c.type==='elite'&&c.owner)troops+=1;if(hero==='fortifier'&&c.type==='main'&&c.owner)troops+=.5;if(specialty==='military'){troops*=1.5;gold*=.5}if(specialty==='economy'){troops*=.5;gold*=2}if(hero==='guildmaster')gold*=1.3;if(c.stabilizing&&c.stabilizing>0){troops*=.5;gold*=.5}if(c.scorched&&c.scorched>0){troops*=.5;gold*=.5}return{troops,gold}}
 function income(s,p){return owned(s,p).reduce((a,c)=>{const n=incomeFor(c,c.level,c.specialty,s.players[p]?.hero);return{troops:a.troops+n.troops,gold:a.gold+n.gold}},{troops:0,gold:0})}
-function unlocked(s,p,type){
-  if(type==='soldier')return true;
-  if(type==='archer')return owned(s,p).some(c=>c.type==='archer'||c.type==='elite');
-  if(type==='knight')return owned(s,p).some(c=>c.type==='knight'||c.type==='elite');
-  if(type==='cavalry')return owned(s,p).some(c=>c.type==='cavalry'||c.type==='elite'||(c.type==='knight'&&c.level>=2));
-  return owned(s,p).some(c=>c.type===type);
-}
-function getUnlockedTroops(s,p){
-  return ['soldier','archer','knight','cavalry'].filter(t=>unlocked(s,p,t));
-}
 function power(){return 1}
 function defense(s,c){
-  let def = c.troops;
-  if(c.scorched&&c.scorched>0) def = Math.floor(def*0.80);
-  return def;
+  let value=c.troops;
+  if(c.type==='small')value=Math.floor(value*1.2+1e-9);
+  if(c.type==='archer'&&c.owner)value=Math.floor(value*1.15+1e-9);
+  if(c.owner&&hasConnectedDefenseNode(s,c.id,c.owner))value=Math.floor(value*1.15+1e-9);
+  if(c.scorched>0)value=Math.floor(value*.8);
+  return value;
 }
 function nearest(s,p,target){return owned(s,p).sort((a,b)=>dist(a,target)-dist(b,target))[0]}
 function report(s,text){s.events.unshift({text,time:s.time});s.events=s.events.slice(0,60)}
@@ -1870,37 +1842,32 @@ function routeBetween(source,target,mode='fast',mapIdx=source?.mapIndex||0){
 }
 function routeLength(points){return points.slice(1).reduce((n,p,i)=>n+dist(points[i],p),0)}
 function position(a,after=0){let remaining=clamp((a.t+after)*a.speed,0,a.length);for(let i=1;i<a.path.length;i++){const from=a.path[i-1],to=a.path[i],len=dist(from,to);if(remaining<=len||i===a.path.length-1){const f=len?clamp(remaining/len,0,1):1;return{x:from.x+(to.x-from.x)*f,y:from.y+(to.y-from.y)*f}}remaining-=len}return a.path[0]}
-function setPath(a,from,to,mode='fast',weather=null,hero=null){const mapIdx=from.mapIndex!==undefined?from.mapIndex:to.mapIndex!==undefined?to.mapIndex:0;a.path=mode==='intercept'?[{...from},{...to}]:routeBetween(from,to,mode,mapIdx);if(a.path.length===1)a.path.push({...to});let baseSpeed=mode==='flank'?65:SPEED;if((from.type==='knight'||from.type==='cavalry')&&from.owner===a.owner)baseSpeed=mode==='flank'?81:106;if(hero==='vanguard')baseSpeed*=1.15;if(hero==='infiltrator'&&mode==='flank')baseSpeed*=1.25;if(weather?.type==='rain')baseSpeed*=0.75;else if(weather?.type==='fog'&&mode==='flank')baseSpeed*=1.20;a.speed=Math.round(baseSpeed*100)/100;a.length=routeLength(a.path);a.duration=Math.max(.001,a.length/a.speed);a.t=0;a.x=from.x;a.y=from.y;a.tx=to.x;a.ty=to.y;a.route=mode;a.revision=(a.revision||0)+1}
+// Shared march calculations used by orders, AI and previews.
+function marchSpeed(source,route='fast',weather=null,hero=null){
+  let speed=route==='flank'?65:SPEED;
+  if(source.marchBoost===true||['knight','cavalry'].includes(source.type))speed*=1.25;
+  if(hero==='vanguard')speed*=1.15;
+  if(hero==='infiltrator'&&route==='flank')speed*=1.25;
+  if(weather?.type==='rain')speed*=.75;
+  else if(weather?.type==='fog'&&route==='flank')speed*=1.2;
+  return Math.round(speed*100)/100;
+}
+function setPath(a,from,to,mode='fast',weather=null,hero=null){
+  const mapIdx=from.mapIndex??to.mapIndex??0;
+  a.path=mode==='intercept'?[{x:from.x,y:from.y},{x:to.x,y:to.y}]:routeBetween(from,to,mode,mapIdx);
+  if(a.path.length===1)a.path.push({x:to.x,y:to.y});
+  if(a.marchBoost===undefined)a.marchBoost=['knight','cavalry'].includes(from.type)&&from.owner===a.owner;
+  if(a.siegeBoost===undefined)a.siegeBoost=from.type==='knight'&&from.owner===a.owner;
+  a.speed=marchSpeed(a,mode,weather,hero);
+  a.length=routeLength(a.path);a.duration=Math.max(.001,a.length/a.speed);a.t=0;
+  a.x=from.x;a.y=from.y;a.tx=to.x;a.ty=to.y;a.route=mode;a.revision=(a.revision||0)+1;
+}
 function dispatch(s,p,sourceId,targetId,count,options={}){
   const source=s.castles[sourceId],target=s.castles[targetId];
   if(busy(s)||!source||!target||source===target||source.owner!==p||!Number.isSafeInteger(count)||count<1||count>available(s,source,options.respectReserve!==false))return false;
   source.troops-=count;
-  source.units=source.units||{soldier:source.troops+count,archer:0,knight:0,cavalry:0};
-  const armyUnits={soldier:0,archer:0,knight:0,cavalry:0};
-  let left=count;
-  const totalGarrison=Math.max(1,(source.units.soldier||0)+(source.units.archer||0)+(source.units.knight||0)+(source.units.cavalry||0));
-  for(const k of ['soldier','archer','knight','cavalry']){
-    const avail=source.units[k]||0;
-    const share=Math.min(avail,Math.floor(count*(avail/totalGarrison)));
-    armyUnits[k]=share;
-    source.units[k]-=share;
-    left-=share;
-  }
-  for(const k of ['soldier','archer','knight','cavalry']){
-    if(left<=0)break;
-    const canTake=Math.min(left,source.units[k]||0);
-    armyUnits[k]+=canTake;
-    source.units[k]-=canTake;
-    left-=canTake;
-  }
-  if(left>0)armyUnits.soldier+=left;
-  const a={id:s.nextArmy++,owner:p,source:sourceId,target:targetId,count,units:armyUnits,power:1,returning:false,inBattle:false,intercept:null};
+  const a={id:s.nextArmy++,owner:p,source:sourceId,target:targetId,count,power:1,returning:false,inBattle:false,intercept:null};
   setPath(a,source,target,options.route==='flank'?'flank':'fast',s.weather,s.players[p]?.hero);
-  if(armyUnits.cavalry>0){
-    const cavRatio=armyUnits.cavalry/count;
-    a.speed=Math.round((a.speed*(1+0.25*cavRatio))*100)/100;
-    a.duration=Math.max(.001,a.length/a.speed);
-  }
   s.armies.push(a);
   if(s.stats[p])s.stats[p].dispatched+=count;
   sync(s);
@@ -1910,9 +1877,24 @@ function dispatch(s,p,sourceId,targetId,count,options={}){
 function attack(s,p,id,count,sourceId,options={}){const source=sourceId===undefined?owned(s,p).filter(c=>c.id!==id&&available(s,c,options.respectReserve!==false)>=count).sort((a,b)=>dist(a,s.castles[id]||a)-dist(b,s.castles[id]||b))[0]:s.castles[sourceId];return source?dispatch(s,p,source.id,id,count,options):false}
 function setReserve(s,p,id,n){const c=s.castles[id];if(busy(s)||!c||c.owner!==p||!Number.isSafeInteger(n)||n<0||n>MAX_RESOURCE)return false;c.reserve=n;return true}
 function setSupply(s,p,source,target,mode='fast'){const c=s.castles[source],d=s.castles[target];if(busy(s)||!c||c.owner!==p)return false;if(target===null){c.supply=null;return true}if(!d||d===c||d.owner!==p)return false;const seen=new Set([c.id]);let next=d;while(next){if(seen.has(next.id))return false;seen.add(next.id);next=next.supply?s.castles[next.supply.target]:null}c.supply={target,owner:p,route:mode==='flank'?'flank':'fast',next:s.time+5};return true}
-function coordinate(s,p,targetId,entries,options={}){if(busy(s)||!s.castles[targetId]||!Array.isArray(entries)||!entries.length)return false;const seen=new Set(),prepared=[];const hero=s.players[p]?.hero;for(const e of entries){if(!e)return false;const c=s.castles[e.source];if(!e||!c||c.owner!==p||c.id===targetId||seen.has(c.id)||!Number.isSafeInteger(e.count)||e.count<1||e.count>available(s,c,options.respectReserve!==false))return false;seen.add(c.id);const route=options.route==='flank'?'flank':'fast';let routeSpeed=(c.type==='knight'||c.type==='cavalry')&&c.owner===p?(route==='flank'?81:106):(route==='flank'?65:SPEED);if(hero==='vanguard')routeSpeed*=1.15;if(hero==='infiltrator'&&route==='flank')routeSpeed*=1.25;if(s.weather?.type==='rain')routeSpeed*=0.75;else if(s.weather?.type==='fog'&&route==='flank')routeSpeed*=1.20;routeSpeed=Math.round(routeSpeed*100)/100;prepared.push({...e,route,duration:routeLength(routeBetween(c,s.castles[targetId],route,s.mapIndex))/routeSpeed})}const max=Math.max(...prepared.map(e=>e.duration));for(const e of prepared)s.orders.push({id:s.nextOrder++,owner:p,source:e.source,target:targetId,count:e.count,route:e.route,launch:s.time+(options.synchronized===false?0:max-e.duration)});report(s,`${prepared.length} castles preparing ${prepared.reduce((n,e)=>n+e.count,0)} troops. Arrival in ${max.toFixed(1)}s.`);return true}
+function coordinate(s,p,targetId,entries,options={}){
+  if(busy(s)||!s.castles[targetId]||!Array.isArray(entries)||!entries.length)return false;
+  const seen=new Set(),prepared=[];
+  for(const e of entries){
+    const c=e&&s.castles[e.source];
+    if(!c||c.owner!==p||c.id===targetId||seen.has(c.id)||!Number.isSafeInteger(e.count)||e.count<1||e.count>available(s,c,options.respectReserve!==false))return false;
+    seen.add(c.id);
+    const route=options.route==='flank'?'flank':'fast';
+    const speed=marchSpeed(c,route,s.weather,s.players[p]?.hero);
+    prepared.push({...e,route,duration:routeLength(routeBetween(c,s.castles[targetId],route,s.mapIndex))/speed});
+  }
+  const max=Math.max(...prepared.map(e=>e.duration));
+  for(const e of prepared)s.orders.push({id:s.nextOrder++,owner:p,source:e.source,target:targetId,count:e.count,route:e.route,launch:s.time+(options.synchronized===false?0:max-e.duration)});
+  report(s,`${prepared.length} castles preparing ${prepared.reduce((n,e)=>n+e.count,0)} troops. Arrival in ${max.toFixed(1)}s.`);
+  return true;
+}
 function cancelOrder(s,p,id){if(busy(s))return false;const index=s.orders.findIndex(o=>o.id===id&&o.owner===p);if(index<0)return false;s.orders.splice(index,1);return true}
-function redirect(s,p,id,target,route='fast'){const a=s.armies.find(a=>a.id===id),c=s.castles[target];if(busy(s)||!a||a.owner!==p||!c)return false;setPath(a,position(a),c,route==='flank'?'flank':'fast',s.weather,s.players[p]?.hero);a.target=target;a.intercept=null;a.returning=c.owner===p;report(s,`Army ${id} redirected to ${c.name}.`);return true}
+function redirect(s,p,id,target,route='fast'){const a=s.armies.find(a=>a.id===id),c=s.castles[target];if(busy(s)||!a||a.owner!==p||a.inBattle||!c)return false;setPath(a,position(a),c,route==='flank'?'flank':'fast',s.weather,s.players[p]?.hero);a.target=target;a.intercept=null;a.returning=c.owner===p;report(s,`Army ${id} redirected to ${c.name}.`);return true}
 function recall(s,p,id){
   const a=s.armies.find(a=>a.id===id);
   if(busy(s)||!a||a.owner!==p||a.inBattle)return false;
@@ -1928,56 +1910,10 @@ function recall(s,p,id){
   return true;
 }
 function rendezvous(from,target){const remaining=Math.max(0,target.duration-target.t);for(let t=.1;t<=remaining+.1;t+=.1){const point=position(target,t);if(dist(from,point)/SPEED<=t+.03)return{...point,eta:t}}return null}
-function intercept(s,p,id,targetId){const a=s.armies.find(a=>a.id===id),enemy=s.armies.find(a=>a.id===targetId);if(busy(s)||!a||!enemy||a.owner!==p||enemy.owner===p)return false;const point=rendezvous(position(a),enemy);if(!point)return false;setPath(a,position(a),point,'intercept',s.weather,s.players[p]?.hero);a.intercept=enemy.id;a.interceptTimer=.25;a.returning=false;return true}
+function intercept(s,p,id,targetId){const a=s.armies.find(a=>a.id===id),enemy=s.armies.find(a=>a.id===targetId);if(busy(s)||!a||!enemy||a.inBattle||enemy.inBattle||a.owner!==p||enemy.owner===p)return false;const point=rendezvous(position(a),enemy);if(!point)return false;setPath(a,position(a),point,'intercept',s.weather,s.players[p]?.hero);a.intercept=enemy.id;a.interceptTimer=.25;a.returning=false;return true}
 function upgradeCost(c,p=null,s=null){const base=UPGRADE_COSTS[(c?.level||0)-1]??Infinity;if(p&&s?.players[p]?.hero==='fortifier')return Math.round(base*0.75);return base}
 function upgrade(s,p,id,specialty){const c=s.castles[id];const cost=upgradeCost(c,p,s);if(busy(s)||!c||c.owner!==p||c.level>=MAX_CASTLE_LEVEL||!s.players[p]||s.players[p].gold<cost)return false;specialty=specialty||c.specialty;if(!['balanced','military','economy'].includes(specialty))return false;s.players[p].gold-=cost;c.level++;c.specialty=specialty;report(s,`${c.name}: level ${c.level}, ${specialty}.`);return true}
 function specialize(s,p,id,specialty){const c=s.castles[id];if(busy(s)||!c||c.owner!==p)return false;if(!['balanced','military','economy'].includes(specialty))return false;if(c.specialty===specialty)return true;const cost=50;if(!s.players[p]||s.players[p].gold<cost)return false;s.players[p].gold-=cost;c.specialty=specialty;report(s,`${c.name}: specialized to ${specialty}.`);return true}
-function trainTroops(s,p,castleId,troopType,count){
-  const c=s.castles[castleId];
-  if(busy(s)||!c||c.owner!==p||!UNITS[troopType]||!Number.isSafeInteger(count)||count<1)return false;
-  if(!unlocked(s,p,troopType))return false;
-  const canProduce=(troopType==='soldier'&&['main','troop','small','elite'].includes(c.type))||
-                    (troopType==='archer'&&['archer','elite'].includes(c.type))||
-                    (troopType==='knight'&&['knight','elite'].includes(c.type))||
-                    (troopType==='cavalry'&&(['cavalry','elite'].includes(c.type)||(c.type==='knight'&&c.level>=2)));
-  if(!canProduce)return false;
-  c.trainingQueue=c.trainingQueue||[];
-  if(c.trainingQueue.length>=5)return false;
-  const u=UNITS[troopType];
-  const totalCost=u.cost*count;
-  if(!s.players[p]||s.players[p].gold<totalCost)return false;
-  s.players[p].gold-=totalCost;
-  const time=Math.max(1,u.time*(1+(count-1)*0.35));
-  c.trainingQueue.push({
-    id:(s.nextTrainId=(s.nextTrainId||1)+1),
-    type:troopType,
-    count,
-    timeRemaining:time,
-    totalTime:time,
-    cost:totalCost
-  });
-  report(s,`${p==='blue'?'You':p.toUpperCase()} queued training: ${count} ${u.name} at ${c.name}.`);
-  return true;
-}
-function quickRecruit(s, p, castleId, count = 100) {
-  const c = s.castles[castleId];
-  if (busy(s) || !c || c.owner !== p || !s.players[p]) return false;
-  if (!Number.isSafeInteger(count) || count < 1) return false;
-  const cost = count;
-  if (s.players[p].gold < cost) return false;
-
-  s.players[p].gold -= cost;
-  c.troops = Math.min(MAX_RESOURCE, c.troops + count);
-  c.units = c.units || { soldier: Math.max(0, c.troops - count), archer: 0, knight: 0, cavalry: 0 };
-  c.units.soldier = (c.units.soldier || 0) + count;
-  if (s.stats && s.stats[p]) {
-    s.stats[p].produced = (s.stats[p].produced || 0) + count;
-  }
-  s.effects = s.effects || [];
-  s.effects.push({ x: c.x, y: c.y - 25, text: `+${count} ⚔`, owner: p, life: 1.8 });
-  report(s, `${p === "blue" ? "You" : p.toUpperCase()} quick-recruited ${count} troops at ${c.name} for ${cost} Gold.`);
-  return true;
-}
 function validateMapRoster(mapIndex) {
   const mIdx = Number.isInteger(Number(mapIndex)) ? clamp(Number(mapIndex), 0, MAPS.length - 1) : 0;
   const layout = MAPS[mIdx];
@@ -2010,8 +1946,7 @@ function launchDragonStrike(s,p,x,y){
   s.dragonStrike={
     id:Date.now(),
     owner:p,
-    x:clamp(x,40,2160),
-    y:clamp(y,60,1340),
+    ...clampMapPoint({x,y}),
     radius:190,
     timer:3.0,
     totalTimer:3.0,
@@ -2042,8 +1977,8 @@ function processDragonStrike(s,dt){
           const falloff=d<=70?0.50:d<=130?0.40:0.30;
           const casualties=Math.min(a.count,Math.max(1,Math.ceil(a.count*falloff)));
           a.count-=casualties;
-          resizeUnits(a,a.count);
           if(s.stats[a.owner])s.stats[a.owner].roadLosses+=casualties;
+          creditKill(s,strike.owner,a.owner,casualties);
           s.effects.push({x:pos.x,y:pos.y,text:`💥 −${casualties} 🔥`,owner:strike.owner,life:2.2});
         }
       }
@@ -2054,8 +1989,8 @@ function processDragonStrike(s,dt){
           const falloff=d<=45?0.35:0.25;
           const casualties=Math.min(c.troops,Math.max(1,Math.ceil(c.troops*falloff)));
           c.troops-=casualties;
-          resizeUnits(c,c.troops);
           if(c.owner&&s.stats[c.owner])s.stats[c.owner].defenseLosses+=casualties;
+          creditKill(s,strike.owner,c.owner,casualties);
           c.scorched=14;
           report(s,`${c.name} scorched by Dragon fire! Defense −20% for 14s.`);
           s.effects.push({x:c.x,y:c.y,text:`🔥 SCORCHED −${casualties}`,owner:strike.owner,life:2.5});
@@ -2072,9 +2007,6 @@ function processDragonStrike(s,dt){
 }
 function capture(s,c,p,count){
   const old=c.owner;
-  const hadArcher=unlocked(s,p,'archer');
-  const hadKnight=unlocked(s,p,'knight');
-  const hadCavalry=unlocked(s,p,'cavalry');
   c.owner=p;
   c.troops=count;
   c.carry=0;
@@ -2082,295 +2014,108 @@ function capture(s,c,p,count){
   c.supply=null;
   c.stabilizing=7;
   c.scorched=0;
-  c.trainingQueue=[];
   s.orders=s.orders.filter(o=>o.source!==c.id);
   for(const x of s.castles)if(x.supply?.target===c.id){x.supply=null;report(s,`Supply to ${c.name} stopped: ownership changed.`)}
   if(s.stats[p])s.stats[p].captures++;
   report(s,`${p==='blue'?'You captured':p.toUpperCase()+' captured'} ${c.name}${old?' from '+old:''}.`);
   s.effects.push({x:c.x,y:c.y,text:'CAPTURED',owner:p,life:1.8});
-  if(!hadArcher&&unlocked(s,p,'archer')){
-    report(s,`🏹 ARCHERS UNLOCKED! Archer Castles can now train ranged troops.`);
-    s.effects.push({x:c.x,y:c.y-40,text:'ARCHERS UNLOCKED!',owner:p,life:3.0});
-  }
-  if(!hadKnight&&unlocked(s,p,'knight')){
-    report(s,`🛡️ KNIGHTS UNLOCKED! Knight Castles can now train heavy knights.`);
-    s.effects.push({x:c.x,y:c.y-40,text:'KNIGHTS UNLOCKED!',owner:p,life:3.0});
-  }
-  if(!hadCavalry&&unlocked(s,p,'cavalry')){
-    report(s,`🐎 CAVALRY UNLOCKED! Cavalry can now be recruited.`);
-    s.effects.push({x:c.x,y:c.y-40,text:'CAVALRY UNLOCKED!',owner:p,life:3.0});
+
+}
+function reconcileOrders(s){
+  for(const c of s.castles){
+    let remaining=c.troops;
+    s.orders=s.orders.filter(o=>{
+      if(o.source!==c.id)return true;
+      if(o.owner!==c.owner||o.count>remaining){report(s,`Order ${o.id} cancelled: source troops lost.`);return false;}
+      remaining-=o.count;return true;
+    });
   }
 }
-function reconcileOrders(s){for(const c of s.castles){let remaining=c.troops;s.orders=s.orders.filter(o=>{if(o.source!==c.id)return true;if(o.owner!==c.owner||o.count>remaining){report(s,`Order ${o.id} cancelled: source troops lost.`);return false}remaining-=o.count;return true})}}
+function creditKill(s,killer,victim,count){
+  if(killer&&victim&&killer!==victim&&s.stats[killer])s.stats[killer].casualtiesInflicted=addResource(s.stats[killer].casualtiesInflicted||0,count);
+}
+function creditRoadLoss(s,victim,count,factions,damage=null){
+  const enemies=factions.filter(f=>f.p!==victim).sort((a,b)=>a.p.localeCompare(b.p));
+  const weights=enemies.map(f=>Math.max(0,damage?.[f.p]??f.startTotal??f.total)),total=weights.reduce((n,w)=>n+w,0);
+  let left=count;
+  enemies.forEach((f,i)=>{const share=i===enemies.length-1?left:Math.floor(count*(total?weights[i]/total:1/enemies.length));creditKill(s,f.p,victim,share);left-=share;});
+}
+function siegeOutcome(s,army,castle){
+  const source=s.castles[army.source];
+  const siegeBoost=army.siegeBoost??(source?.type==='knight'&&source.owner===army.owner);
+  let multiplier=siegeBoost?1.2:1;
+  if(army.route==='flank'&&s.players[army.owner]?.hero==='infiltrator')multiplier*=1.2;
+  const strength=Math.floor(army.count*multiplier);
+  const defPower=defense(s,castle),wins=strength>defPower;
+  const survivors=wins?Math.max(1,army.count-Math.ceil(defPower*army.count/strength)):0;
+  const defenderLosses=wins?castle.troops:Math.min(castle.troops,Math.floor(strength*castle.troops/Math.max(1,defPower)));
+  return{wins,survivors,strength,defPower,defenderLosses,attackerLosses:army.count-survivors};
+}
 function resolve(s,a){
   const c=s.castles[a.target];
   if(c.owner===a.owner){
-    c.troops=addResource(c.troops,a.count);
-    if(a.units){
-      c.units=c.units||{soldier:c.troops-a.count,archer:0,knight:0,cavalry:0};
-      for(const k of ['soldier','archer','knight','cavalry']){
-        c.units[k]=(c.units[k]||0)+(a.units[k]||0);
-      }
-    }
-    report(s,`${c.name} reinforced +${a.count}.`);
+    const accepted=Math.min(a.count,MAX_RESOURCE-c.troops);
+    c.troops+=accepted;
+    report(s,`${c.name} reinforced +${accepted}.`);
     return;
   }
-  if(c.type==='archer'&&c.owner&&c.owner!==a.owner){
-    let volley=Math.min(Math.floor(a.count*0.15*c.level)+2,Math.max(0,a.count-1));
-    if(s.weather?.type==='snow')volley=Math.floor(volley*0.7);
-    if(volley>0){
-      a.count-=volley;
-      if(a.units){
-        let remVolley=volley;
-        for(const k of ['soldier','cavalry','archer','knight']){
-          if(remVolley<=0)break;
-          const sub=Math.min(remVolley,a.units[k]||0);
-          a.units[k]-=sub;
-          remVolley-=sub;
-        }
-      }
-      if(s.stats[a.owner])s.stats[a.owner].attackLosses+=volley;
-      s.effects.push({x:c.x,y:c.y,text:'🏹 −'+volley,owner:c.owner,life:1.8});
-      report(s,`${c.name} archers inflicted −${volley} casualties on approaching army.`);
-    }
-  }
-  let effAttacker=a.count;
-  if(a.route==='flank'&&s.players[a.owner]?.hero==='infiltrator'){effAttacker=Math.floor(a.count*1.20);}
-  if(a.units?.knight>0){
-    effAttacker+=Math.floor(a.units.knight*0.20);
-  }
-  if(a.units?.cavalry>0){
-    effAttacker+=Math.floor(a.units.cavalry*0.15);
-  }
-  let defPower=c.troops;
-  if(c.type==='small'){
-    defPower=Math.floor(defPower*1.20);
-  }else if(c.owner&&hasConnectedDefenseNode(s,c.id,c.owner)){
-    defPower=Math.floor(defPower*1.15);
-  }
-  if(c.scorched&&c.scorched>0){
-    defPower=Math.floor(defPower*0.80);
-  }
-  if(effAttacker>defPower){
-    const sur=Math.max(1,a.count-Math.ceil(defPower*a.count/effAttacker));
-    const attLoss=a.count-sur;
-    const defLoss=c.troops;
-    if(s.stats[a.owner])s.stats[a.owner].attackLosses+=attLoss;
-    if(c.owner&&s.stats[c.owner])s.stats[c.owner].defenseLosses+=defLoss;
-    capture(s,c,a.owner,sur);
-    if(a.units){
-      c.units={...a.units};
-      resizeUnits(c,sur);
-    }
-  }else{
-    const defLoss=Math.min(c.troops,effAttacker);
-    const attLoss=a.count;
-    if(s.stats[a.owner])s.stats[a.owner].attackLosses+=attLoss;
-    if(c.owner&&s.stats[c.owner])s.stats[c.owner].defenseLosses+=defLoss;
-    c.troops-=defLoss;
-    if(c.units){
-      let remLoss=defLoss;
-      for(const k of ['soldier','cavalry','archer','knight']){
-        if(remLoss<=0)break;
-        const sub=Math.min(remLoss,c.units[k]||0);
-        c.units[k]-=sub;
-        remLoss-=sub;
-      }
-    }
+  const result=siegeOutcome(s,a,c),defender=c.owner;
+  if(s.stats[a.owner])s.stats[a.owner].attackLosses+=result.attackerLosses;
+  if(defender&&s.stats[defender])s.stats[defender].defenseLosses+=result.defenderLosses;
+  creditKill(s,a.owner,defender,result.defenderLosses);
+  creditKill(s,defender,a.owner,result.attackerLosses);
+  if(result.wins)capture(s,c,a.owner,result.survivors);
+  else{
+    c.troops-=result.defenderLosses;
     report(s,`${c.name} held: ${c.troops} troops remain.`);
-    s.effects.push({x:c.x,y:c.y,text:'−'+defLoss,owner:a.owner,life:1.8});
+    s.effects.push({x:c.x,y:c.y,text:'−'+result.defenderLosses,owner:a.owner,life:1.8});
   }
 }
-function resizeUnits(entity,total){
-  const keys=['soldier','archer','knight','cavalry'];
-  const old=entity.units||{soldier:total};
-  const sum=keys.reduce((n,k)=>n+Math.max(0,old[k]||0),0);
-  let assigned=0;
-  const shares=keys.map(k=>{const exact=sum?Math.max(0,old[k]||0)*total/sum:0;const n=Math.floor(exact);assigned+=n;return{k,n,f:exact-n}}).sort((a,b)=>b.f-a.f);
-  if(!sum){entity.units={soldier:total,archer:0,knight:0,cavalry:0};return;}
-  for(let i=0;i<total-assigned;i++)shares[i%shares.length].n++;
-  entity.units=Object.fromEntries(shares.map(x=>[x.k,x.n]));
-}
-function splitSurvivors(armies,total){const sum=armies.reduce((n,a)=>n+a.count,0);let assigned=0;const shares=armies.map(a=>{const exact=sum?a.count*total/sum:0,n=Math.floor(exact);assigned+=n;return{a,n,f:exact-n}}).sort((a,b)=>b.f-a.f||a.a.id-b.a.id);for(let i=0;i<total-assigned;i++)shares[i].n++;shares.forEach(x=>{resizeUnits(x.a,x.n);x.a.count=x.n})}
-function calcUnitsHp(units) {
-  let hp = 0;
-  for (const [k, count] of Object.entries(units || {})) {
-    if (count > 0) hp += count * (UNITS[k]?.hp || 100);
-  }
-  return hp;
-}
-
-function calcArmyDamage(units, targetUnits, hero, weather) {
-  let rawDmg = 0;
-  let total = 0;
-  for (const [k, count] of Object.entries(units || {})) {
-    if (!count || count <= 0) continue;
-    const u = UNITS[k] || UNITS.soldier;
-    total += count;
-    const crit = 1 + (u.critChance || 0.05) * ((u.critMult || 1.5) - 1);
-    let d = count * (u.damage || 24) * crit;
-    if (k === 'archer' && weather?.type === 'snow') d *= (weather.volleyMod || 0.70);
-    rawDmg += d;
-  }
-  if (total <= 0) return 0;
-
-  let targetTotal = 0;
-  let targetArmorSum = 0;
-  for (const [k, count] of Object.entries(targetUnits || {})) {
-    if (!count || count <= 0) continue;
-    const u = UNITS[k] || UNITS.soldier;
-    targetTotal += count;
-    targetArmorSum += count * (u.armor || 0);
-  }
-  const avgArmor = targetTotal > 0 ? targetArmorSum / targetTotal : 0;
-
-  let counter = 1.0;
-  const cc = units.cavalry || 0;
-  const ac = units.archer || 0;
-  const kc = units.knight || 0;
-  const sc = units.soldier || 0;
-
-  const opAc = targetUnits?.archer || 0;
-  const opSc = targetUnits?.soldier || 0;
-  const opCc = targetUnits?.cavalry || 0;
-
-  if (targetTotal > 0) {
-    if (cc > 0 && opAc > 0) counter += 0.35 * (cc / total) * (opAc / targetTotal);
-    if (ac > 0 && opSc > 0) counter += 0.25 * (ac / total) * (opSc / targetTotal);
-    if (kc > 0 && opSc > 0) counter += 0.25 * (kc / total) * (opSc / targetTotal);
-    if (kc > 0 && opCc > 0) counter += 0.20 * (kc / total) * (opCc / targetTotal);
-    if (cc > 0 && opSc > 0 && cc >= opSc * 0.8) counter += 0.20 * (cc / total);
-    if (sc > 0 && opCc > 0 && sc >= opCc * 1.4) counter += 0.25 * (sc / total);
-  }
-
-  let dmg = rawDmg * counter * (1 - avgArmor);
-  if (hero === 'vanguard') dmg *= 1.10;
-  return dmg;
-}
-
-function calcGroupPower(armies, opponentArmies, hero){
-  let sc=0, ac=0, kc=0, cc=0, ec=0, total=0;
-  for(const a of armies){
-    total += a.count;
-    if(a.units){
-      sc += a.units.soldier||0;
-      ac += a.units.archer||0;
-      kc += a.units.knight||0;
-      cc += a.units.cavalry||0;
-      ec += a.units.elite||0;
-    } else {
-      sc += a.count;
+// Project known arrivals and production; future commands and road fights remain uncertain.
+function forecastCastle(s,id,horizon,p=null,ignoreOwnAssaults=false){
+  const c={...s.castles[id]},arrivals=aiIncoming(s,c,p,ignoreOwnAssaults)
+    .map(a=>({army:a,eta:Math.max(0,a.duration-a.t)}))
+    .filter(e=>e.eta<=horizon+1e-8).sort((a,b)=>a.eta-b.eta||a.army.id-b.army.id);
+  const departures=s.orders.filter(o=>o.owner===p&&o.source===id&&o.launch<=s.time+horizon)
+    .map(o=>({army:o,eta:Math.max(0,o.launch-s.time),leaving:true}));
+  const events=arrivals.concat(departures).sort((a,b)=>a.eta-b.eta||Number(b.leaving)-Number(a.leaving)||a.army.id-b.army.id);
+  let at=0,firstLoss=null;
+  function grow(eta){
+    let left=Math.max(0,eta-at);
+    while(left>1e-8){
+      const dt=Math.min(left,c.stabilizing>0?c.stabilizing:Infinity,c.scorched>0?c.scorched:Infinity);
+      if(c.owner){const growth=(c.carry||0)+incomeFor(c,c.level,c.specialty,s.players[c.owner]?.hero).troops*dt;
+        const n=Math.floor(growth+1e-9);c.troops=addResource(c.troops,n);c.carry=Math.max(0,growth-n);}
+      c.stabilizing=Math.max(0,(c.stabilizing||0)-dt);c.scorched=Math.max(0,(c.scorched||0)-dt);left-=dt;
     }
+    at=eta;
   }
-  let opSc=0, opAc=0, opKc=0, opCc=0, opEc=0, opTotal=0;
-  for(const a of (opponentArmies||[])){
-    opTotal += a.count;
-    if(a.units){
-      opSc += a.units.soldier||0;
-      opAc += a.units.archer||0;
-      opKc += a.units.knight||0;
-      opCc += a.units.cavalry||0;
-      opEc += a.units.elite||0;
-    } else {
-      opSc += a.count;
-    }
+  for(const e of events){
+    grow(e.eta);
+    if(e.leaving){if(c.owner===e.army.owner)c.troops=Math.max(0,c.troops-e.army.count);continue;}
+    if(c.owner===e.army.owner)c.troops=addResource(c.troops,e.army.count);
+    else{const r=siegeOutcome(s,e.army,c);if(r.wins){c.owner=e.army.owner;c.troops=r.survivors;c.carry=0;c.stabilizing=7;if(firstLoss===null)firstLoss=e.eta;}else c.troops-=r.defenderLosses;}
   }
-  let power = sc*1.0 + ac*1.4 + cc*1.75 + kc*2.0 + ec*2.5;
-  if(hero==='vanguard') power *= 1.10;
-  if(total > 0 && opTotal > 0){
-    let counter = 1.0;
-    if(cc > 0 && opAc > 0) counter += 0.50 * (cc / total);
-    if(ac > 0 && opSc > 0) counter += 0.35 * (ac / total);
-    if(kc > 0 && opSc > 0) counter += 0.40 * (kc / total);
-    if(kc > 0 && opCc > 0) counter += 0.25 * (kc / total);
-    if(cc > 0 && opSc > 0 && cc >= opSc * 0.8) counter += 0.25 * (cc / total);
-    if(sc > 0 && opCc > 0 && sc >= opCc * 1.4) counter += 0.30 * (sc / total);
-    power *= counter;
-  }
-  return { total, power };
+  grow(horizon);
+  return{...c,firstLoss};
 }
+function setAIStyle(s,style){
+  if(!['balanced','defender','economist','raider'].includes(style))return false;
+  s.aiStyle=style;
+  for(const p of s.botPlayers||[]){if(s.players[p]){s.players[p].aiStyle=style;s.players[p].aiTimer=0;}}
+  return true;
+}
+function splitSurvivors(armies,total){const sum=armies.reduce((n,a)=>n+a.count,0);let assigned=0;const shares=armies.map(a=>{const exact=sum?a.count*total/sum:0,n=Math.floor(exact);assigned+=n;return{a,n,f:exact-n}}).sort((a,b)=>b.f-a.f||a.a.id-b.a.id);for(let i=0;i<total-assigned;i++)shares[i].n++;shares.forEach(x=>x.a.count=x.n)}
+function calcGroupPower(armies,opponentArmies,hero){
+  const total=armies.reduce((n,a)=>n+a.count,0);
+  return{total,power:total*(hero==='vanguard'?1.1:1)};
+}
+function armyDamage(total,hero){return total*24*(hero==='vanguard'?1.1:1);}
 function battleGroups(s,group){
   const owners=[...new Set(group.map(a=>a.owner))];
   if(owners.length<=1)return;
   const point=position(group[0]);
 
-  const hasSpecificUnits = group.some(a => a.units && (a.units.archer > 0 || a.units.knight > 0 || a.units.cavalry > 0 || a.units.elite > 0 || (a.units.soldier > 0 && a.units.soldier !== a.count)));
-
-  if (s.progressiveCombat || hasSpecificUnits) {
-    // Progressive two-sided round simulation with aggregated HP pools
-    const factions = owners.map(p => {
-      const fArmies = group.filter(a => a.owner === p);
-      const total = fArmies.reduce((sum, a) => sum + a.count, 0);
-      const units = { soldier: 0, archer: 0, knight: 0, cavalry: 0 };
-      for (const a of fArmies) {
-        if (a.units) {
-          units.soldier += a.units.soldier || 0;
-          units.archer += a.units.archer || 0;
-          units.knight += a.units.knight || 0;
-          units.cavalry += a.units.cavalry || 0;
-        } else {
-          units.soldier += a.count;
-        }
-      }
-      const hero = s.players[p]?.hero;
-      let hp = calcUnitsHp(units);
-      return { p, armies: fArmies, startTotal: total, total, units, hero, hp };
-    });
-
-    const dt = 0.1;
-    let rounds = 0;
-    while (factions.filter(f => f.hp > 0).length > 1 && rounds < 200) {
-      rounds++;
-      const activeFactions = factions.filter(f => f.hp > 0);
-      const damageDealt = {};
-      for (const attacker of activeFactions) {
-        const enemies = activeFactions.filter(f => f.p !== attacker.p);
-        const enemyUnits = { soldier: 0, archer: 0, knight: 0, cavalry: 0 };
-        let enemyTotal = 0;
-        for (const e of enemies) {
-          enemyTotal += e.total;
-          for (const k of Object.keys(enemyUnits)) enemyUnits[k] += e.units[k] || 0;
-        }
-        damageDealt[attacker.p] = calcArmyDamage(attacker.units, enemyUnits, attacker.hero, s.weather) * dt;
-      }
-
-      for (const fd of activeFactions) {
-        let incomingDmg = 0;
-        for (const [otherP, dmg] of Object.entries(damageDealt)) {
-          if (otherP !== fd.p) {
-            const otherEnemiesTotal = activeFactions.filter(f => f.p !== otherP).reduce((sum, f) => sum + f.total, 0);
-            const share = otherEnemiesTotal > 0 ? fd.total / otherEnemiesTotal : 1;
-            incomingDmg += dmg * share;
-          }
-        }
-        fd.hp = Math.max(0, fd.hp - incomingDmg);
-        const avgUnitHp = fd.total > 0 ? calcUnitsHp(fd.units) / fd.total : 100;
-        const newCount = fd.hp <= 0 ? 0 : Math.max(0, Math.ceil(fd.hp / avgUnitHp));
-        fd.total = newCount;
-        resizeUnits(fd, newCount);
-      }
-    }
-
-    for (const fd of factions) {
-      const survivors = Math.max(0, fd.total);
-      splitSurvivors(fd.armies, survivors);
-      const lost = fd.startTotal - survivors;
-      if (s.stats[fd.p]) s.stats[fd.p].roadLosses += lost;
-    }
-
-    const alive = factions.filter(f => f.total > 0);
-    if (alive.length === 1) {
-      const winner = alive[0];
-      s.effects.push({ ...point, text: `${winner.p.toUpperCase()} wins`, owner: winner.p, life: 1.8 });
-      report(s, `Road battle: ${winner.p} won with ${winner.total} survivors.`);
-    } else {
-      s.effects.push({ ...point, text: 'MUTUAL LOSS', owner: 'neutral', life: 1.8 });
-      report(s, 'Road battle: both forces eliminated.');
-    }
-    return;
-  }
-
-  // Legacy fallback for tests with generic non-typed armies
   if(owners.length===2){
     const p1=owners[0], p2=owners[1];
     const g1=group.filter(a=>a.owner===p1), g2=group.filter(a=>a.owner===p2);
@@ -2389,6 +2134,8 @@ function battleGroups(s,group){
       splitSurvivors(g1,0);
       splitSurvivors(g2,Math.max(0,c2-loss2));
     }
+    creditKill(s,p2,p1,c1-g1.reduce((n,a)=>n+a.count,0));
+    creditKill(s,p1,p2,c2-g2.reduce((n,a)=>n+a.count,0));
     if(s.stats[p1])s.stats[p1].roadLosses+=c1-g1.reduce((n,a)=>n+a.count,0);
     if(s.stats[p2])s.stats[p2].roadLosses+=c2-g2.reduce((n,a)=>n+a.count,0);
     s.effects.push({...point,text:`${c1} vs ${c2}`,owner:c1>=c2?p1:p2,life:1.8});
@@ -2403,10 +2150,12 @@ function battleGroups(s,group){
     const surLoss=Math.min(winner.total, Math.ceil(runnerUp.power * winner.total / Math.max(1, winner.power)));
     const surviving=Math.max(0,winner.total-surLoss);
     splitSurvivors(winner.armies,surviving);
+    creditRoadLoss(s,winner.p,surLoss,factionData);
     if(s.stats[winner.p])s.stats[winner.p].roadLosses+=surLoss;
     for(let i=1;i<factionData.length;i++){
       const loser=factionData[i];
       splitSurvivors(loser.armies,0);
+      creditKill(s,winner.p,loser.p,loser.total);
       if(s.stats[loser.p])s.stats[loser.p].roadLosses+=loser.total;
     }
     s.effects.push({...point,text:`${winner.p.toUpperCase()} wins`,owner:winner.p,life:1.8});
@@ -2421,7 +2170,7 @@ function engageBattle(s,group){
         existingBattle.armies.push(a.id);
         a.inBattle=existingBattle.id;
         existingBattle.hpPools=existingBattle.hpPools||{};
-        existingBattle.hpPools[a.owner]=(existingBattle.hpPools[a.owner]||0)+calcUnitsHp(a.units||{soldier:a.count});
+        existingBattle.hpPools[a.owner]=(existingBattle.hpPools[a.owner]||0)+(a.count*100);
         report(s,`Reinforcements from ${a.owner} joined road battle!`);
         s.effects.push({x:existingBattle.x,y:existingBattle.y-18,text:'+REINFORCEMENTS',owner:a.owner,life:1.2});
       }
@@ -2433,7 +2182,7 @@ function engageBattle(s,group){
   const bId=(s.nextBattleId=(s.nextBattleId||1)+1);
   const hpPools = {};
   for(const a of group){
-    hpPools[a.owner] = (hpPools[a.owner] || 0) + calcUnitsHp(a.units || { soldier: a.count });
+    hpPools[a.owner] = (hpPools[a.owner] || 0) + (a.count*100);
   }
   const battle={
     id:bId,
@@ -2463,7 +2212,7 @@ function tickBattles(s,dt){
           if(!b.armies.includes(a.id)){
             b.armies.push(a.id);
             b.hpPools=b.hpPools||{};
-            const addHp=calcUnitsHp(a.units||{soldier:a.count});
+            const addHp=(a.count*100);
             b.hpPools[a.owner]=(b.hpPools[a.owner]||0)+addHp;
             report(s,`Reinforcements from ${a.owner} joined road battle!`);
             s.effects.push({x:b.x,y:b.y-18,text:'+REINFORCEMENTS',owner:a.owner,life:1.2});
@@ -2489,22 +2238,11 @@ function tickBattles(s,dt){
     const factionData=owners.map(p=>{
       const fArmies=active.filter(a=>a.owner===p);
       const total=fArmies.reduce((sum,a)=>sum+a.count,0);
-      const units={soldier:0,archer:0,knight:0,cavalry:0};
-      for(const a of fArmies){
-        if(a.units){
-          units.soldier+=a.units.soldier||0;
-          units.archer+=a.units.archer||0;
-          units.knight+=a.units.knight||0;
-          units.cavalry+=a.units.cavalry||0;
-        }else{
-          units.soldier+=a.count;
-        }
-      }
       const hero=s.players[p]?.hero;
       if(b.hpPools[p]===undefined||b.hpPools[p]<=0){
-        b.hpPools[p]=calcUnitsHp(units);
+        b.hpPools[p]=total*100;
       }
-      return{p,armies:fArmies,total,units,hero};
+      return{p,armies:fArmies,total,hero};
     });
 
     const bTotal=factionData.reduce((sum,fd)=>sum+fd.total,0);
@@ -2514,14 +2252,7 @@ function tickBattles(s,dt){
     // SIMULTANEOUS DAMAGE: Compute all damage dealt before applying casualties
     const damageDealt={};
     for(const attacker of factionData){
-      const enemies=factionData.filter(f=>f.p!==attacker.p);
-      const enemyUnits={soldier:0,archer:0,knight:0,cavalry:0};
-      let enemyTotal=0;
-      for(const e of enemies){
-        enemyTotal+=e.total;
-        for(const k of Object.keys(enemyUnits))enemyUnits[k]+=e.units[k]||0;
-      }
-      const dps=calcArmyDamage(attacker.units,enemyUnits,attacker.hero,s.weather);
+      const dps=armyDamage(attacker.total,attacker.hero);
       damageDealt[attacker.p]=dps*dt;
     }
 
@@ -2536,7 +2267,7 @@ function tickBattles(s,dt){
         }
       }
 
-      const maxHpPool=calcUnitsHp(fd.units);
+      const maxHpPool=fd.total*100;
       const currentHp=Math.min(maxHpPool,b.hpPools[fd.p]!==undefined?b.hpPools[fd.p]:maxHpPool);
       b.hpPools[fd.p]=Math.max(0,currentHp-incomingDmg);
       const avgUnitHp=fd.total>0?maxHpPool/fd.total:100;
@@ -2546,6 +2277,7 @@ function tickBattles(s,dt){
       if(wholeLoss>0){
         splitSurvivors(fd.armies,fd.total-wholeLoss);
         if(s.stats[fd.p])s.stats[fd.p].roadLosses+=wholeLoss;
+        creditRoadLoss(s,fd.p,wholeLoss,factionData,damageDealt);
         s.effects.push({
           x:b.x+(rng(s.seed+Math.floor(b.elapsed*100))()-0.5)*24,
           y:b.y+(rng(s.seed+Math.floor(b.elapsed*200))()-0.5)*24,
@@ -2559,7 +2291,8 @@ function tickBattles(s,dt){
     s.armies=s.armies.filter(a=>a.count>0);
   }
 }
-function contactTime(a,b,limit){const p=position(a),q=position(b),ap=position(a,limit),bp=position(b,limit),rx=p.x-q.x,ry=p.y-q.y,vx=(ap.x-p.x-bp.x+q.x)/limit,vy=(ap.y-p.y-bp.y+q.y)/limit,c=rx*rx+ry*ry-CONTACT*CONTACT;if(c<=.00001)return 0;const aa=vx*vx+vy*vy,bb=2*(rx*vx+ry*vy),disc=bb*bb-4*aa*c;if(aa<1e-9||disc<0)return Infinity;const t=(-bb-Math.sqrt(disc))/(2*aa);return t>=0&&t<=limit?t:Infinity}
+function contactMotion(a,limit){const p=position(a),next=position(a,limit),padding=CONTACT/2+.000001;return{p,next,minX:Math.min(p.x,next.x)-padding,maxX:Math.max(p.x,next.x)+padding,minY:Math.min(p.y,next.y)-padding,maxY:Math.max(p.y,next.y)+padding}}
+function contactTime(a,b,limit){if(a.maxX<b.minX||b.maxX<a.minX||a.maxY<b.minY||b.maxY<a.minY)return Infinity;const p=a.p,q=b.p,ap=a.next,bp=b.next,rx=p.x-q.x,ry=p.y-q.y,vx=(ap.x-p.x-bp.x+q.x)/limit,vy=(ap.y-p.y-bp.y+q.y)/limit,c=rx*rx+ry*ry-CONTACT*CONTACT;if(c<=.00001)return 0;const aa=vx*vx+vy*vy,bb=2*(rx*vx+ry*vy),disc=bb*bb-4*aa*c;if(aa<1e-9||disc<0)return Infinity;const t=(-bb-Math.sqrt(disc))/(2*aa);return t>=0&&t<=limit?t:Infinity}
 function nextCorner(a){let n=0;for(let i=1;i<a.path.length;i++){n+=dist(a.path[i-1],a.path[i]);const t=n/a.speed-a.t;if(t>1e-7)return t}return Math.max(0,a.duration-a.t)}
 function move(s,dt){
   let left=dt,guard=0;
@@ -2567,10 +2300,13 @@ function move(s,dt){
     const movingArmies=s.armies.filter(a=>!a.inBattle);
     let step=Math.max(1e-7,Math.min(left,...(movingArmies.length?movingArmies.map(nextCorner):[left])));
     let hit=Infinity;
+    // Cache endpoint geometry once per segment, including stationary battle participants.
+    // Swept bounds only reject impossible contacts; the existing exact solver and pair order remain.
+    const motions=s.armies.map(a=>contactMotion(a,step));
     for(let i=0;i<s.armies.length;i++){
       for(let j=i+1;j<s.armies.length;j++){
         if(s.armies[i].owner!==s.armies[j].owner&&(!s.armies[i].inBattle||!s.armies[j].inBattle)){
-          hit=Math.min(hit,contactTime(s.armies[i],s.armies[j],step));
+          hit=Math.min(hit,contactTime(motions[i],motions[j],step));
         }
       }
     }
@@ -2616,13 +2352,7 @@ function move(s,dt){
 }
 function threat(s,id){const c=s.castles[id],incoming=s.armies.filter(a=>a.target===id&&a.intercept===null).map(a=>({id:a.id,owner:a.owner,count:a.count,eta:Math.max(0,a.duration-a.t),friendly:a.owner===c.owner})).sort((a,b)=>a.eta-b.eta||a.id-b.id);let troops=c.troops,owner=c.owner,last=0,carry=c.carry;for(const a of incoming){if(owner){const growth=incomeFor(c).troops*(a.eta-last)+carry;troops+=Math.floor(growth);carry=growth-Math.floor(growth)}last=a.eta;if(a.owner===owner)troops+=a.count;else if(a.count>troops){troops=a.count-troops;owner=a.owner;carry=0}else troops-=a.count}return{incoming,troops,owner,horizon:last}}
 function aiTravelTime(s,from,to,route='fast',p=null){
-  let speed=(from.type==='knight'||from.type==='cavalry')?106:SPEED;
-  if(route==='flank')speed=(from.type==='knight'||from.type==='cavalry')?81:65;
-  if(s.players[p]?.hero==='vanguard')speed*=1.15;
-  if(route==='flank'&&s.players[p]?.hero==='infiltrator')speed*=1.25;
-  if(s.weather?.type==='rain')speed*=.75;
-  if(route==='flank'&&s.weather?.type==='fog')speed*=1.20;
-  return routeLength(routeBetween(from,to,route,s.mapIndex))/speed;
+  return routeLength(routeBetween(from,to,route,s.mapIndex))/marchSpeed(from,route,s.weather,s.players[p]?.hero);
 }
 function aiRoute(s,p,from,to){
   const fast=aiTravelTime(s,from,to,'fast',p);
@@ -2632,17 +2362,11 @@ function aiRoute(s,p,from,to){
   return flank<fast*.98||(hostileRoad&&flank<fast*1.3)?'flank':'fast';
 }
 function aiDefenseFactor(s,c){
-  const fortification=c.type==='small'?1.2:
-    c.owner&&hasConnectedDefenseNode(s,c.id,c.owner)?1.15:1;
-  return fortification*(c.scorched>0?.8:1);
+  return c.troops?defense(s,c)/c.troops:defense(s,{...c,troops:10000})/10000;
 }
 function aiAttackPower(s,a,target){
-  let count=a.count;
-  if(target.type==='archer'&&target.owner&&target.owner!==a.owner){
-    count-=Math.min(Math.floor(count*.15*target.level)+2,Math.max(0,count-1));
-  }
-  const unitBonus=(a.units?.knight||0)*.2+(a.units?.cavalry||0)*.15;
-  return (count+(a.route==='flank'&&s.players[a.owner]?.hero==='infiltrator'?count*.2:0)+unitBonus)/aiDefenseFactor(s,target);
+  const r=siegeOutcome(s,a,target);
+  return r.strength/(target.troops?r.defPower/target.troops:aiDefenseFactor(s,target));
 }
 function aiIncoming(s,c,p,ignoreOwnAssaults=false){
   const moving=s.armies.filter(a=>a.target===c.id&&a.intercept===null&&!a.inBattle&&
@@ -2650,45 +2374,11 @@ function aiIncoming(s,c,p,ignoreOwnAssaults=false){
   // Only our own orders are known before launch; opponent orders are private.
   const ordered=s.orders.filter(o=>o.owner===p&&o.target===c.id&&s.castles[o.source]?.owner===p&&
     !(ignoreOwnAssaults&&c.owner!==p))
-    .map(o=>({id:-o.id,owner:o.owner,count:o.count,route:o.route,
+    .map(o=>({id:-o.id,owner:o.owner,source:o.source,count:o.count,route:o.route,
       duration:Math.max(0,o.launch-s.time)+aiTravelTime(s,s.castles[o.source],c,o.route,o.owner),t:0}));
   return moving.concat(ordered);
 }
-function aiForecast(s,c,horizon,p,ignoreOwnAssaults=false){
-  const arrivals=aiIncoming(s,c,p,ignoreOwnAssaults)
-    .map(a=>({owner:a.owner,count:a.count,eta:Math.max(0,a.duration-a.t),army:a,leaving:false}));
-  if(c.owner===p){
-    for(const o of s.orders.filter(o=>o.owner===p&&o.source===c.id)){
-      arrivals.push({owner:p,count:o.count,eta:Math.max(0,o.launch-s.time),army:{id:o.id},leaving:true});
-    }
-  }
-  const events=arrivals
-    .filter(a=>a.eta<=horizon+.01)
-    .sort((a,b)=>a.eta-b.eta||Number(b.leaving)-Number(a.leaving)||a.army.id-b.army.id);
-  let owner=c.owner,troops=c.troops,at=0,firstLoss=null;
-  const grow=eta=>{
-    if(owner){
-      const rate=incomeFor(c,c.level,c.specialty,s.players[owner]?.hero).troops;
-      troops+=Math.floor(rate*Math.max(0,eta-at));
-    }
-    at=eta;
-  };
-  for(const a of events){
-    grow(a.eta);
-    if(a.leaving){if(owner===p)troops=Math.max(0,troops-a.count);continue;}
-    if(a.owner===owner)troops+=a.count;
-    else{
-      const power=aiAttackPower(s,a,{...c,owner});
-      if(power>troops){
-        troops=Math.max(1,Math.floor(a.count*(1-troops/power)));
-        owner=a.owner;
-        if(firstLoss===null)firstLoss=a.eta;
-      }else troops=Math.max(0,troops-Math.ceil(power));
-    }
-  }
-  grow(horizon);
-  return{owner,troops,firstLoss};
-}
+function aiForecast(s,c,horizon,p,ignoreOwnAssaults=false){return forecastCastle(s,c.id,horizon,p,ignoreOwnAssaults);}
 function aiDragonTarget(s,p){
   const candidates=s.castles.filter(c=>c.owner&&c.owner!==p).map(c=>({x:c.x,y:c.y}));
   candidates.push(...s.armies.filter(a=>a.owner!==p&&a.count>=40).map(a=>position(a,3)));
@@ -2732,8 +2422,7 @@ function aiForPlayer(s,p){
       aiTravelTime(s,s.castles[o.source],target,o.route,p)),
       ...marching.map(a=>Math.max(0,a.duration-a.t)));
     const projected=aiForecast(s,target,eta+1,p,true);
-    const volley=target.type==='archer'&&target.owner?Math.max(.25,1-.15*target.level):1;
-    const required=Math.ceil(projected.troops*aiDefenseFactor(s,target)/volley)+
+    const required=Math.ceil(projected.troops*aiDefenseFactor(s,projected))+
       (diff==='hard'?18:diff==='normal'?14:5);
     if(projected.owner!==p&&commitment<required*.9){
       for(const o of orders)cancelOrder(s,p,o.id);
@@ -2792,11 +2481,7 @@ function aiForPlayer(s,p){
       const count=Math.min(capacity,needed);
       if(count>=5&&dispatch(s,p,h.id,c.id,count))needed-=count;
     }
-    if(needed>0&&player.gold>=100){
-      const batches=Math.min(Math.ceil(needed/100),Math.floor(player.gold/100),2);
-      const count=batches*100;
-      if(count>=100)quickRecruit(s,p,c.id,count);
-    }
+
   }
   // A buildup at the neighboring enemy keep is a likely next move. Stage a
   // limited reserve before its army leaves, while keeping the rear defended.
@@ -2829,38 +2514,6 @@ function aiForPlayer(s,p){
       return{c,spec,score:value/upgradeCost(c,p,s)};
     }).sort((a,b)=>b.score-a.score||a.c.id-b.c.id);
   if(upgrades.length)upgrade(s,p,upgrades[0].c.id,upgrades[0].spec);
-  if(player.gold>=120&&own.length>1){
-    const enemyUnits={soldier:0,archer:0,knight:0,cavalry:0};
-    for(const a of s.armies.filter(a=>a.owner!==p)){
-      if(a.units)for(const type of Object.keys(enemyUnits))enemyUnits[type]+=a.units[type]||0;
-      else enemyUnits.soldier+=a.count;
-    }
-    for(const c of hostile.filter(c=>own.some(h=>dist(h,c)<750))){
-      if(c.units)for(const type of Object.keys(enemyUnits))enemyUnits[type]+=c.units[type]||0;
-      else enemyUnits.soldier+=c.troops;
-    }
-    const enemyTotal=Object.values(enemyUnits).reduce((n,x)=>n+x,0)||1;
-    const trainOptions=[];
-    for(const c of own){
-      const type=c.type==='archer'?'archer':c.type==='knight'?'knight':c.type==='cavalry'?'cavalry':c.type==='elite'?'knight':'soldier';
-      if(!unlocked(s,p,type)||!['main','troop','small','elite','archer','knight','cavalry'].includes(c.type))continue;
-      if((c.trainingQueue||[]).length>=1||danger.has(c.id))continue;
-      if(type==='soldier'&&c.type==='archer')continue;
-      const cost=UNITS[type].cost;
-      if(player.gold-reserveGold<cost*5)continue;
-      const counter=type==='cavalry'?enemyUnits.archer*.5+enemyUnits.soldier*.12:
-        type==='knight'?enemyUnits.soldier*.4+enemyUnits.cavalry*.25:
-        type==='archer'?enemyUnits.soldier*.35:enemyUnits.cavalry*.3;
-      trainOptions.push({c,type,score:(UNITS[type].power*(1+counter/enemyTotal)*
-        (enemyDistance(c)<700?1.3:1))/cost});
-    }
-    trainOptions.sort((a,b)=>b.score-a.score||a.c.id-b.c.id);
-    if(trainOptions.length){
-      const {c,type}=trainOptions[0];
-      const count=Math.min(diff==='hard'?12:8,Math.floor((player.gold-reserveGold)*.35/UNITS[type].cost));
-      if(count>=5)trainTroops(s,p,c.id,type,count);
-    }
-  }
   // Strike projected positions after the warning delay; include friendly fire.
   if(canDragonStrike(s,p)){
     const best=dragonTarget||aiDragonTarget(s,p);
@@ -2897,10 +2550,9 @@ function aiForPlayer(s,p){
       const eta=Math.max(...selected.map(x=>x.time));
       const predicted=aiForecast(s,target,eta+1,p);
       const defender=predicted.owner===p?0:predicted.troops;
-      const factor=target.type==='small'?1.2:target.owner&&hasConnectedDefenseNode(s,target.id,target.owner)?1.15:1;
-      const volley=target.type==='archer'&&target.owner ? .15*target.level : 0;
+      const factor=aiDefenseFactor(s,predicted);
       const safety=diff==='hard'?18:diff==='normal'?14:5;
-      need=Math.ceil(defender*factor/Math.max(.25,1-volley))+safety;
+      need=Math.ceil(defender*factor)+safety;
       if(target.owner&&target.type==='elite')need+=15;
       if(total>=need)break;
     }
@@ -2940,8 +2592,7 @@ function aiForPlayer(s,p){
     const finalEta=Math.max(...sources.map(x=>aiTravelTime(s,x.c,choice.target,route,p)));
     const finalForecast=aiForecast(s,choice.target,finalEta+1,p);
     const finalNeed=Math.ceil((finalForecast.owner===p?0:finalForecast.troops)*
-      aiDefenseFactor(s,choice.target)/(choice.target.type==='archer'&&choice.target.owner?
-      Math.max(.25,1-.15*choice.target.level):1))+
+      aiDefenseFactor(s,choice.target))+
       (diff==='hard'?18:diff==='normal'?14:5)+
       (choice.target.owner&&choice.target.type==='elite'?15:0);
     if(finalNeed>entries.reduce((n,e)=>n+e.count,0)){
@@ -3057,16 +2708,8 @@ function advance(s,dt){
       report(s,`Weather changed to ${wName}.`);
       s.effects.push({x:550,y:380,text:`WEATHER: ${wName.toUpperCase()}`,owner:'neutral',life:2.5});
       for(const a of s.armies){
-        if(a.intercept!==null)continue;
-        const from=s.castles[a.source]||{type:'main',owner:a.owner};
-        let baseSpeed=a.route==='flank'?65:SPEED;
-        if(from.type==='knight'&&from.owner===a.owner)baseSpeed=a.route==='flank'?81:106;
-        const hero=s.players[a.owner]?.hero;
-        if(hero==='vanguard')baseSpeed*=1.15;
-        if(hero==='infiltrator'&&a.route==='flank')baseSpeed*=1.25;
-        if(s.weather.type==='rain')baseSpeed*=0.75;
-        else if(s.weather.type==='fog'&&a.route==='flank')baseSpeed*=1.20;
-        const newSpeed=Math.round(baseSpeed*100)/100;
+        if(a.marchBoost===undefined)a.marchBoost=['knight','cavalry'].includes(s.castles[a.source]?.type);
+        const newSpeed=marchSpeed(a,a.route,s.weather,s.players[a.owner]?.hero);
         if(newSpeed!==a.speed){
           const f=Math.min(1,a.t/a.duration);
           a.speed=newSpeed;
@@ -3079,32 +2722,17 @@ function advance(s,dt){
   for(const c of s.castles){
     if(c.stabilizing>0)c.stabilizing=Math.max(0,c.stabilizing-dt);
     if(c.scorched>0)c.scorched=Math.max(0,c.scorched-dt);
-    if(c.trainingQueue&&c.trainingQueue.length>0){
-      const item=c.trainingQueue[0];
-      item.timeRemaining-=dt;
-      if(item.timeRemaining<=0){
-        const add=Math.min(item.count,MAX_RESOURCE-c.troops);
-        c.troops+=add;
-        c.units=c.units||{soldier:0,archer:0,knight:0,cavalry:0};
-        c.units[item.type]=(c.units[item.type]||0)+add;
-        c.trainingQueue.shift();
-        if(c.owner&&s.stats[c.owner])s.stats[c.owner].produced=addResource(s.stats[c.owner].produced,add);
-        report(s,`Training completed: ${item.count} ${UNITS[item.type]?.name||item.type}s at ${c.name}.`);
-        s.effects.push({x:c.x,y:c.y-35,text:`+${item.count} ${item.type.toUpperCase()}`,owner:c.owner,life:2.2});
-      }
-    }
     if(c.owner){
       const inc=incomeFor(c,c.level,c.specialty,s.players[c.owner]?.hero),growth=c.carry+inc.troops*dt,n=Math.floor(growth+1e-9);
       c.carry=Math.max(0,growth-n);
       const produced=Math.min(n,MAX_RESOURCE-c.troops);
       c.troops+=produced;
-      if(produced>0){
-        const pType=c.type==='archer'?'archer':c.type==='knight'?'knight':c.type==='cavalry'?'cavalry':'soldier';
-        c.units=c.units||{soldier:0,archer:0,knight:0,cavalry:0};
-        c.units[pType]=(c.units[pType]||0)+produced;
-      }
       if(s.stats[c.owner])s.stats[c.owner].produced=addResource(s.stats[c.owner].produced,produced);
-      if(s.players[c.owner])s.players[c.owner].gold=addResource(s.players[c.owner].gold,inc.gold*dt);
+      if(s.players[c.owner]){
+        const earned=Math.min(MAX_RESOURCE-s.players[c.owner].gold,inc.gold*dt);
+        s.players[c.owner].gold+=earned;
+        if(s.stats[c.owner])s.stats[c.owner].goldEarned=addResource(s.stats[c.owner].goldEarned||0,earned);
+      }
     }
   }
   for(const o of [...s.orders]){
@@ -3178,7 +2806,9 @@ function deserialize(input){
     if(input.length>5e6)return null;
     s=JSON.parse(input);
   }else if(typeof input==='object'&&input!==null){
-    s=input;
+    const text=JSON.stringify(input);
+    if(text.length>5e6)return null;
+    s=JSON.parse(text);
   }else{
     return null;
   }
@@ -3186,12 +2816,47 @@ function deserialize(input){
     whole=n=>Number.isSafeInteger(n)&&finite(n),index=n=>Number.isInteger(n)&&n>=0&&n<21,
     point=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Math.abs(p.x)<=3500&&Math.abs(p.y)<=3500,
     route=r=>['fast','flank'].includes(r);
-  if(!s||s.version!==VERSION||!Array.isArray(s.castles)||s.castles.length!==21||!finite(s.time)||(!Number.isSafeInteger(s.seed)||s.seed<0)||!Array.isArray(s.armies)||s.armies.length>5000||!Array.isArray(s.orders)||s.orders.length>5000||!s.players||!s.stats)return null;
+  if(!s||![4,VERSION].includes(s.version)||!Array.isArray(s.castles)||s.castles.length!==21||!finite(s.time)||(!Number.isSafeInteger(s.seed)||s.seed<0)||!Array.isArray(s.armies)||s.armies.length>5000||!Array.isArray(s.orders)||s.orders.length>5000||!s.players||!s.stats)return null;
   const keys=Object.keys(s.players),owner=p=>keys.includes(p);
+  const legacy=s.version===4;
+  const legacyUnits=(u,n)=>u&&typeof u==='object'&&!Array.isArray(u)&&
+    Object.keys(u).every(k=>['soldier','archer','knight','cavalry'].includes(k))&&
+    ['soldier','archer','knight','cavalry'].every(k=>whole(u[k]))&&Object.values(u).reduce((a,b)=>a+b,0)===n;
+  for(const c of s.castles){
+    if(!c||c.scorched!==undefined&&!finite(c.scorched))return null;
+    if(legacy&&c.units!==undefined&&!legacyUnits(c.units,c.troops))return null;
+    if(legacy&&c.trainingQueue!==undefined&&(!Array.isArray(c.trainingQueue)||c.trainingQueue.length>5||!c.trainingQueue.every(q=>q&&whole(q.id)&&q.id>0&&['soldier','archer','knight','cavalry'].includes(q.type)&&whole(q.count)&&q.count>0&&finite(q.cost)&&finite(q.totalTime)&&q.totalTime>=1&&finite(q.timeRemaining)&&q.timeRemaining>0&&q.timeRemaining<=q.totalTime)))return null;
+  }
+  for(const a of s.armies){
+    if(!a||legacy&&a.units!==undefined&&!legacyUnits(a.units,a.count)||
+      a.marchBoost!==undefined&&typeof a.marchBoost!=='boolean'||a.siegeBoost!==undefined&&typeof a.siegeBoost!=='boolean')return null;
+  }
+  if(s.matchId===undefined)s.matchId=`legacy:${s.seed}:${s.mapIndex??0}`;
+  if(typeof s.matchId!=='string'||!s.matchId.length||s.matchId.length>160)return null;
+  if(s.battles===undefined)s.battles=[];
+  if(!Array.isArray(s.battles)||s.battles.length>5000)return null;
+  const membership=new Map();
+  for(const b of s.battles){
+    if(!b||!whole(b.id)||b.id<1||!point(b)||!finite(b.elapsed)||!Array.isArray(b.armies)||b.armies.length>5000||new Set(b.armies).size!==b.armies.length||!b.armies.every(whole)||!b.hpPools||Array.isArray(b.hpPools)||!Object.entries(b.hpPools).every(([p,hp])=>owner(p)&&Number.isFinite(hp)&&hp>=0&&hp<=MAX_RESOURCE*640))return null;
+    for(const id of b.armies){if(membership.has(id))return null;membership.set(id,b.id);}
+  }
+  if(new Set(s.battles.map(b=>b.id)).size!==s.battles.length||s.armies.some(a=>a.inBattle?membership.get(a.id)!==a.inBattle:membership.has(a.id)))return null;
+  if(s.nextBattleId===undefined)s.nextBattleId=1;
+  if(!whole(s.nextBattleId)||s.nextBattleId<1||s.battles.some(b=>b.id>s.nextBattleId))return null;
+  if(s.weather&&(!['clear','rain','fog','snow'].includes(s.weather.type)||!finite(s.weather.timer)||s.weather.timer>45||!Number.isInteger(s.weather.index)||s.weather.index<0||s.weather.index>3))return null;
+  if(s.dragonCooldowns===undefined)s.dragonCooldowns={};
+  if(!s.dragonCooldowns||Array.isArray(s.dragonCooldowns)||!Object.entries(s.dragonCooldowns).every(([p,n])=>owner(p)&&finite(n)&&n<=75))return null;
+  if(s.dragonStrike){const d=s.dragonStrike;if(!owner(d.owner)||!point(d)||d.x<0||d.x>2200||d.y<0||d.y>1500||d.radius!==190||!Number.isFinite(d.timer)||d.timer<-.0251||d.timer>3||d.totalTimer!==3||!finite(d.impactTimer)||d.impactTimer>1.6||!['incoming','impact'].includes(d.state))return null;}
+  for(const p of keys){
+    if(!s.stats[p])return null;
+    for(const k of ['casualtiesInflicted','goldEarned']){if(s.stats[p][k]===undefined)s.stats[p][k]=0;if(!finite(s.stats[p][k]))return null;}
+  }
+
   if(keys.length<2||keys.length>4||keys.some((p,i)=>p!==PLAYER_KEYS[i]))return null;
   if(!s.castles.every((c,i)=>c&&c.id===i&&Object.hasOwn(TYPES,c.type)&&typeof c.name==='string'&&c.name.length<=100&&(c.owner===null||owner(c.owner))&&whole(c.troops)&&whole(c.reserve)&&finite(c.carry)&&c.carry<1&&Number.isInteger(c.level)&&c.level>=1&&c.level<=MAX_CASTLE_LEVEL&&['balanced','military','economy'].includes(c.specialty)&&point(c)&&(!c.supply||(index(c.supply.target)&&c.supply.owner===c.owner&&finite(c.supply.next)&&route(c.supply.route)))&&(c.stabilizing===undefined||finite(c.stabilizing))))return null;
   if(!s.armies.every(a=>a&&whole(a.id)&&owner(a.owner)&&whole(a.count)&&a.count>0&&index(a.target)&&index(a.source)&&finite(a.t)&&finite(a.duration)&&a.duration>0&&a.t<=a.duration&&finite(a.length)&&finite(a.speed)&&a.speed>=40&&a.speed<=350&&Array.isArray(a.path)&&a.path.length>=2&&a.path.length<=32&&a.path.every(point)&&Math.abs(routeLength(a.path)-a.length)<.001&&Math.abs(Math.max(.001,a.length/a.speed)-a.duration)<.001&&[...['fast','flank'],'intercept'].includes(a.route)&&(a.intercept===null||(whole(a.intercept)&&finite(a.interceptTimer)))))return null;
   if(!s.orders.every(o=>o&&whole(o.id)&&owner(o.owner)&&index(o.source)&&index(o.target)&&o.source!==o.target&&s.castles[o.source].owner===o.owner&&whole(o.count)&&o.count>0&&finite(o.launch)&&route(o.route)))return null;
+  if(legacy&&s.orders.some(o=>o.units!==undefined&&!legacyUnits(o.units,o.count)))return null;
   if(new Set(s.armies.map(a=>a.id)).size!==s.armies.length||new Set(s.orders.map(o=>o.id)).size!==s.orders.length||!whole(s.nextArmy)||!whole(s.nextOrder)||s.armies.some(a=>a.id>=s.nextArmy)||s.orders.some(o=>o.id>=s.nextOrder))return null;
   const statKeys=['produced','roadLosses','attackLosses','defenseLosses','captures','dispatched'];
   for(const p of keys)if(!s.players[p]||!finite(s.players[p].gold)||!index(s.players[p].home)||!s.stats[p]||!statKeys.every(k=>finite(s.stats[p][k])))return null;
@@ -3215,20 +2880,30 @@ function deserialize(input){
   s.dragonStrike=s.dragonStrike||null;
   s.dragonCooldowns=s.dragonCooldowns||{};
   s.nextBattleId=Number.isSafeInteger(s.nextBattleId)?s.nextBattleId:1;
-  s.nextTrainId=Number.isSafeInteger(s.nextTrainId)?s.nextTrainId:1;
   s.progressiveCombat=s.progressiveCombat===true;
+  // Pending paid recruitment is cancelled and refunded when converting a v4 save.
   for(const c of s.castles){
-    c.trainingQueue=Array.isArray(c.trainingQueue)?c.trainingQueue:[];
+    if(legacy&&c.owner&&s.players[c.owner])for(const q of c.trainingQueue||[])s.players[c.owner].gold=addResource(s.players[c.owner].gold,q.cost);
+    delete c.trainingQueue;delete c.units;
     c.scorched=Number.isFinite(c.scorched)?c.scorched:0;
-    if(!c.units){
-      const pt=c.type==='archer'?'archer':c.type==='knight'?'knight':c.type==='cavalry'?'cavalry':'soldier';
-      c.units={soldier:0,archer:0,knight:0,cavalry:0};
-      c.units[pt]=c.troops;
-    }
   }
+  for(const p of keys)delete s.players[p].unit;
+  for(const o of s.orders)delete o.units;
+  for(const a of s.armies){
+    const progress=a.t/a.duration;
+    a.marchBoost=a.marchBoost??['knight','cavalry'].includes(s.castles[a.source]?.type);
+    a.siegeBoost=a.siegeBoost??(s.castles[a.source]?.type==='knight');
+    delete a.units;
+    if(legacy){a.speed=marchSpeed(a,a.route,s.weather,s.players[a.owner]?.hero);a.duration=Math.max(.001,a.length/a.speed);a.t=progress*a.duration;}
+  }
+  if(legacy)for(const b of s.battles)for(const p of Object.keys(b.hpPools)){
+    const max=s.armies.filter(a=>b.armies.includes(a.id)&&a.owner===p).reduce((n,a)=>n+a.count*100,0);
+    b.hpPools[p]=Math.min(b.hpPools[p],max);
+  }
+  delete s.nextTrainId;s.version=VERSION;
   sync(s);return s;
  }catch{return null}
 }
 
-const api={VERSION,MAX_RESOURCE,MAX_CASTLE_LEVEL,UPGRADE_COSTS,TYPES,UNITS,ERAS,EPOCHS,REGIONS,getTroopRoleInfo,getCastleRoleName,NODE_CATEGORIES,getNodeCategory,getCastleStrategicInfo,hasConnectedDefenseNode,WEATHER_TYPES,HEROES,MAPS,MAP_NAMES,MAP_PLAYERS,PLAYER_KEYS,randomizeCastleTypes,rng,create,owned,totals,sync,incomeFor,income,unlocked,getUnlockedTroops,power,defense,nearest,available,reserved,routeBetween,routeLength,position,dispatch,attack,setReserve,setSupply,coordinate,cancelOrder,redirect,recall,rendezvous,intercept,resolve,battleGroups,upgradeCost,upgrade,specialize,trainTroops,quickRecruit,validateMapRoster,canDragonStrike,launchDragonStrike,engageBattle,tickBattles,ai,aiForPlayer,checkVictory,tick,threat,serialize,deserialize};if(typeof module!=='undefined')module.exports=api;root.CrownEngine=api;
+const api={VERSION,MAP_BOUNDS,clampMapPoint,marchSpeed,siegeOutcome,forecastCastle,setAIStyle,MAX_RESOURCE,MAX_CASTLE_LEVEL,UPGRADE_COSTS,TYPES,ERAS,EPOCHS,REGIONS,getCastleRoleName,NODE_CATEGORIES,getNodeCategory,getCastleStrategicInfo,hasConnectedDefenseNode,WEATHER_TYPES,HEROES,MAPS,MAP_NAMES,MAP_PLAYERS,PLAYER_KEYS,randomizeCastleTypes,rng,create,owned,totals,sync,incomeFor,income,power,defense,nearest,available,reserved,routeBetween,routeLength,position,dispatch,attack,setReserve,setSupply,coordinate,cancelOrder,redirect,recall,rendezvous,intercept,resolve,battleGroups,upgradeCost,upgrade,specialize,validateMapRoster,canDragonStrike,launchDragonStrike,engageBattle,tickBattles,ai,aiForPlayer,checkVictory,tick,threat,serialize,deserialize};if(typeof module!=='undefined')module.exports=api;root.CrownEngine=api;
 })(typeof window==='undefined'?globalThis:window);

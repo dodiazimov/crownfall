@@ -66,6 +66,8 @@
       battles: 0,
       wins: 0,
       losses: 0,
+      draws: 0,
+      recordedMatchIds: [],
       castlesCaptured: 0,
       casualtiesInflicted: 0,
       troopsDispatched: 0,
@@ -148,20 +150,25 @@
 
   function recordMatch(params) {
     const stats = loadStats();
+    if (params.matchId && stats.recordedMatchIds.includes(params.matchId)) return stats;
+    if (params.matchId) stats.recordedMatchIds.push(params.matchId);
+    const outcome = params.outcome || (params.isWin ? 'win' : 'loss');
     stats.battles += 1;
-    if (params.isWin) {
+    if (outcome === 'win') {
       stats.wins += 1;
+    } else if (outcome === 'draw') {
+      stats.draws += 1;
     } else {
       stats.losses += 1;
     }
 
     stats.castlesCaptured += (params.captures || 0);
-    stats.casualtiesInflicted += (params.casualties || 0);
+    stats.casualtiesInflicted += (params.casualtiesInflicted ?? params.casualties ?? 0);
     stats.troopsDispatched += (params.dispatched || 0);
     stats.goldAmassed += (params.goldEarned || 0);
 
-    if (params.allCastles) stats.hasGrandConquest = true;
-    if (params.ironBastion) stats.hasIronBastion = true;
+    if (outcome === 'win' && params.allCastles) stats.hasGrandConquest = true;
+    if (outcome === 'win' && params.ironBastion) stats.hasIronBastion = true;
 
     if (params.specialty && stats.specialtyUsage[params.specialty] !== undefined) {
       stats.specialtyUsage[params.specialty] += 1;
@@ -169,7 +176,9 @@
 
     const entry = {
       timestamp: Date.now(),
-      isWin: !!params.isWin,
+      isWin: outcome === 'win',
+      outcome,
+      matchId: params.matchId || null,
       mapName: params.mapName || 'Unknown Realm',
       captures: params.captures || 0,
       duration: params.duration || 0,

@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const os = require('node:os');
 const zlib = require('node:zlib');
 const Multiplayer = require('./multiplayer.js');
+const {createStaticAssets} = require('./static-assets.js');
 
 // Configuration
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4173;
@@ -38,6 +39,7 @@ const MIME_TYPES = {
   '.pck': 'application/octet-stream',
   '.txt': 'text/plain; charset=utf-8'
 };
+const webAssets = createStaticAssets(MIME_TYPES);
 
 // ----------------------------------------------------
 // Database / User Persistence Layer
@@ -234,10 +236,14 @@ function getRoomSummary(room) {
   };
 }
 
+function normalizeGuestName(value, fallback = 'Mehmon') {
+  return typeof value === 'string' ? value.replace(/[<>\x00-\x1f\x7f]/g, '').trim().slice(0, 20) || fallback : fallback;
+}
+
 function broadcastToRoom(room, msgObj, excludeWs = null) {
-  const payload = JSON.stringify(msgObj);
-  const frame = encodeWsFrame(payload);
   const isSnapshot = msgObj && msgObj.type === 'state_snapshot';
+  // Snapshots are personalized below; encoding the unused shared frame wastes work.
+  const frame = isSnapshot && msgObj.state ? null : encodeWsFrame(JSON.stringify(msgObj));
   for (const role of PLAYER_ROLES) {
     const slot = room.slots[role];
     if (slot && slot.ws && slot.ws !== excludeWs && slot.connected && !slot.ws.destroyed) {
@@ -245,7 +251,10 @@ function broadcastToRoom(room, msgObj, excludeWs = null) {
         // Slow client or mobile network buffer bloat: skip this periodic snapshot to allow socket to drain
         continue;
       }
-      try { slot.ws.write(frame); } catch {}
+      try {
+        const personal = msgObj.state ? {...msgObj, state: Multiplayer.snapshot(room, role).state} : null;
+        slot.ws.write(personal ? encodeWsFrame(JSON.stringify(personal)) : frame);
+      } catch {}
     }
   }
 }
@@ -698,6 +707,9 @@ const server = http.createServer((req, res) => {
     filePath = path.join(DIST_DIR, 'index.html');
   }
 
+  // The separate prototype export keeps its existing serving behavior.
+  if (!filePath.includes('godot-test')) return webAssets.serve(req, res, filePath, parsedUrl.search);
+
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
@@ -825,7 +837,7 @@ server.on('upgrade', (req, socket, head) => {
 
     // Quick Matchmaking (1-Click Multiplayer)
     if (type === 'quick_match') {
-      const username = currentUser || msg.username || 'Sarkarda_' + Math.floor(Math.random() * 1000);
+      const username = currentUser || normalizeGuestName(msg.username, 'Sarkarda_' + Math.floor(Math.random() * 1000));
       const validHeroes = ['vanguard', 'fortifier', 'guildmaster', 'infiltrator'];
       const hero = validHeroes.includes(msg.hero) ? msg.hero : 'vanguard';
       handleQuickMatch(socket, username, send, (room, role) => {
@@ -848,7 +860,7 @@ server.on('upgrade', (req, socket, head) => {
         if (u) currentUser = u.username;
       }
       if (!currentUser && msg.username) {
-        currentUser = String(msg.username).trim() || 'Mehmon';
+        currentUser = normalizeGuestName(msg.username);
       }
       send({ type: 'auth_ok', username: currentUser });
       return;
@@ -856,7 +868,7 @@ server.on('upgrade', (req, socket, head) => {
 
     // 2. Create Room
     if (type === 'create_room') {
-      const username = currentUser || msg.username || 'Sarkarda';
+      const username = currentUser || normalizeGuestName(msg.username, 'Sarkarda');
       let code;
       do {
         code = generateRoomCode();
@@ -908,7 +920,7 @@ server.on('upgrade', (req, socket, head) => {
     // 3. Join Room
     if (type === 'join_room') {
       const code = String(msg.roomCode || '').toUpperCase().trim();
-      const username = currentUser || msg.username || 'Mehmon';
+      const username = currentUser || normalizeGuestName(msg.username, 'Mehmon');
       const room = rooms.get(code);
 
       if (!room) {
@@ -936,7 +948,7 @@ server.on('upgrade', (req, socket, head) => {
           currentRoom = room;
           clientRole = reconnectSlot.role;
           send({
-            ...Multiplayer.snapshot(room),
+            ...Multiplayer.snapshot(room, clientRole),
             type: 'room_rejoined',
             roomCode: code,
             role: clientRole,
@@ -1015,7 +1027,7 @@ server.on('upgrade', (req, socket, head) => {
       const targetRole = msg.role || (type === 'add_bot' ? 'red' : null);
       if (!PLAYER_ROLES.slice(1, currentRoom.maxPlayers).includes(targetRole)) return;
       const slot = currentRoom.slots[targetRole];
-      if (!slot || slot.ws !== socket) return;
+      if (!slot) return;
 
       if (slot.ws && !slot.isBot) {
         return send({ type: 'error', message: "Ushbu o'rinda haqiqiy o'yinchi bor!" });
@@ -1053,7 +1065,7 @@ server.on('upgrade', (req, socket, head) => {
 
     // 4b. Select Hero
     if (type === 'select_hero') {
-      if (!currentRoom || !clientRole) return;
+      if (!currentRoom || currentRoom.status !== 'lobby' || !clientRole || currentRoom.slots[clientRole]?.ws !== socket) return;
       const hero = msg.hero;
       if (!['vanguard', 'fortifier', 'guildmaster', 'infiltrator'].includes(hero)) return;
       currentRoom.slots[clientRole].hero = hero;
@@ -1367,4 +1379,3 @@ function gracefulShutdown() {
 }
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
-

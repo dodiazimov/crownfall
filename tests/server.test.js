@@ -45,11 +45,16 @@ test('real server synchronizes clients, rejects forged state, protects seats and
  try{
  const port=await new Promise((resolve,reject)=>{let log='';const timer=setTimeout(()=>reject(new Error('Server startup timed out: '+log)),5000);child.stdout.on('data',d=>{log+=d;const m=log.match(/Local URL:\s+http:\/\/localhost:(\d+)/);if(m){clearTimeout(timer);resolve(Number(m[1]))}});child.on('error',reject)});
  const a=await connect(port),b=await connect(port);clients.push(a,b);
- a.send({type:'create_room',username:'Host',maxPlayers:2,mapIndex:7,randomCastles:false});const created=await a.wait('room_created');assert.equal(created.room.mapIndex,0);
+ a.send({type:'create_room',username:'<img src=x onerror=boom()>',maxPlayers:2,mapIndex:7,randomCastles:false});const created=await a.wait('room_created');assert.equal(created.room.mapIndex,0);assert.ok(created.room.host.username.length<=20);assert.doesNotMatch(created.room.host.username,/[<>]/);
+ a.send({type:'add_bot',role:'red'});const added=await a.wait('room_updated',m=>m.room.players.some(p=>p.role==='red'&&p.isBot));assert.ok(added.room.players.find(p=>p.role==='red').isBot);
+ a.send({type:'remove_bot',role:'red'});await a.wait('room_updated',m=>!m.room.players.some(p=>p.role==='red'&&p.username));
+ a.send({type:'select_hero',hero:'vanguard'});await a.wait('room_updated',m=>m.room.players.some(p=>p.role==='blue'&&p.hero==='vanguard'));
  b.send({type:'join_room',roomCode:created.roomCode,username:'Guest'});const joined=await b.wait('room_joined');assert.ok(joined.reconnectToken);assert.equal(joined.room.players[1].reconnectToken,undefined);
  a.send({type:'start_match'});const started=await a.wait('match_started');await b.wait('match_started');assert.equal(started.state.armies.length,0);
  b.send({type:'dispatch',fromId:0,toId:2,count:10});await b.wait('command_rejected');
  a.send({type:'dispatch',fromId:0,toId:2,count:100});const aa=await a.wait('state_snapshot',m=>m.state.armies.some(x=>x.count===100));const bb=await b.wait('state_snapshot',m=>m.revision===aa.revision);assert.deepEqual(aa.state,bb.state);
+ a.send({type:'select_hero',hero:'fortifier'});
+ a.send({type:'coordinate',targetId:15,entries:[{source:0,count:20}]});const personal=await a.wait('state_snapshot',m=>m.state.orders.some(o=>o.owner==='blue'));const opponent=await b.wait('state_snapshot',m=>m.revision===personal.revision);assert.equal(opponent.state.orders.length,0);assert.equal(opponent.state.players.blue.hero,'vanguard');
  a.send({type:'sync_state',castles:[{id:0,owner:'red',troops:999999}]});a.send({type:'match_ended',winner:'red'});
  const later=await b.wait('state_snapshot',m=>m.revision>aa.revision);assert.equal(later.state.castles[0].owner,'blue');assert.equal(later.state.result,null);
  a.send({type:'upgrade',castleId:0,specialty:'economy'});const upgraded=await b.wait('state_snapshot',m=>m.state.castles[0].level===2);assert.ok(upgraded.state.players.blue.gold<110);
@@ -57,6 +62,7 @@ test('real server synchronizes clients, rejects forged state, protects seats and
  const impostor=await connect(port);clients.push(impostor);impostor.send({type:'join_room',roomCode:created.roomCode,username:'Guest'});await impostor.wait('error');
  const c=await connect(port);clients.push(c);c.send({type:'join_room',roomCode:created.roomCode,username:'Renamed',reconnectToken:joined.reconnectToken});const rejoined=await c.wait('room_rejoined');assert.equal(rejoined.role,'red');assert.equal(rejoined.state.castles[0].level,2);assert.ok(rejoined.state.armies.length);assert.ok(rejoined.revision>=upgraded.revision);
  c.send({type:'leave_match'});const ended=await a.wait('state_snapshot',m=>m.state.result);assert.equal(ended.state.result,'blue');assert.equal(ended.state.resultReason,'forfeit');
- a.send({type:'rematch'});const rematched=await a.wait('match_started');assert.ok(rematched.state);assert.equal(rematched.state.time,0);
+ a.send({type:'rematch'});const rematched=await a.wait('match_started',m=>m.state.matchId!==started.state.matchId);assert.ok(rematched.state);assert.equal(rematched.state.time,0);assert.ok(rematched.state.botPlayers.includes('red'));
+ const q1=await connect(port),q2=await connect(port);clients.push(q1,q2);q1.send({type:'quick_match',username:'Queue A'});await q1.wait('queue_waiting');q2.send({type:'quick_match',username:'Queue B'});const qm1=await q1.wait('match_started'),qm2=await q2.wait('match_started');assert.equal(qm1.state.matchId,qm2.state.matchId);assert.deepEqual(qm1.state.botPlayers,[]);
  }finally{for(const c of clients)c.socket.destroy();child.kill();await once(child,'exit');rmSync(data,{recursive:true,force:true})}
 });

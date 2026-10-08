@@ -6,7 +6,7 @@ const out='artifacts/crownfall-mobile';
 for(const [width,height] of [[390,844],[844,390],[1024,768],[1280,800],[1440,1000],[1920,1080]]){
  const page=await browser.newPage({viewport:{width,height},hasTouch:width<901,isMobile:width<901});
  await page.addInitScript(()=>localStorage.setItem('crownfall-tour','done'));
- await page.goto('http://localhost:4173');
+ await page.goto(process.env.CROWNFALL_URL || 'http://localhost:4173');
  await page.evaluate(()=>{CrownI18n.setLanguage('en');enterGameMode();matchActive=false;state=E.create(1234);state.paused=false;state.aiDisabled=true;sourceId=0;targetId=1;V.init(state);updateUI();V.render(state,1,0);});
  await page.evaluate(()=>document.fonts.ready);
  await page.waitForTimeout(150);

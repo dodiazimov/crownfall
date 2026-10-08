@@ -160,6 +160,10 @@ function figure(type,color,epoch='18th',phase=0){
  if(modern)s+=path('M-5 -15v6','#a5a28a',2.5);return s+'</g>';
 }
 function sprite(type,color,epoch,phase=0){const key=`unit:${epoch}:${type}:${color}:${phase}`;if(!assets.has(key)){const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-25 -46 52 58">${figure(type,color,epoch,phase)}</svg>`;assets.set(key,`data:image/svg+xml,${encodeURIComponent(svg)}`);}return assets.get(key);}
-function roster(entity,budget){const units=entity.units||{soldier:entity.count||0},entries=Object.entries(units).filter(([t,n])=>n>=1),total=entries.reduce((s,[t,n])=>s+n,0);if(!total)return[];const count=Math.min(budget,total,Math.max(entries.length,Math.ceil(Math.sqrt(total)*1.65))),out=entries.map(([t])=>t);while(out.length<count){let best=entries[0],score=-Infinity;for(const e of entries){const v=e[1]/total*count-out.filter(t=>t===e[0]).length;if(v>score){best=e;score=v;}}out.push(best[0]);}return out;}
+function roster(entity,budget){
+  const total=entity.count||0;
+  const count=Math.min(budget,total,Math.ceil(Math.sqrt(total)*1.65));
+  return Array.from({length:count},()=> 'soldier');
+}
 root.CrownArmyArt=Object.freeze({themes,structure,figure,sprite,roster,cacheSize:()=>assets.size});
 })(window);
